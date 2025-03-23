@@ -6,6 +6,8 @@ pub struct Rsi{
     last_price: f32,
     buff: RsiBuffer,
     value: Option<f32>,
+    rsi_buffer: VecDeque<f32>,
+    smoothing_length: usize,
 }
 
 struct RsiBuffer{
@@ -79,13 +81,15 @@ impl RsiBuffer{
 
 
 impl Rsi{
-    pub fn new(periods: usize) -> Self{
+    pub fn new(periods: usize, smoothing_length: usize) -> Self{
 
         Rsi{
             periods: periods,
             last_price: 0_f32,
             buff: RsiBuffer::new(periods - 1),
             value: None,
+            rsi_buffer: VecDeque::with_capacity(smoothing_length),
+            smoothing_length: smoothing_length,
         }
     }
 
@@ -109,6 +113,10 @@ impl Rsi{
             };
             self.value = Some(rsi);
 
+            if let Some(smoothed_rsi) = self.get_smooth(rsi, true){
+                return Some(smoothed_rsi);
+            }
+
             self.value
         }else{
             None
@@ -124,7 +132,7 @@ impl Rsi{
             let diff = price - self.last_price;
             self.buff.push_current_close(diff);
             }
-            
+
             let avg_gain = self.buff.sum_w / self.periods as f32;
             let avg_loss = self.buff.sum_l / self.periods as f32;
 
@@ -135,6 +143,9 @@ impl Rsi{
             };
             self.value = Some(rsi);
 
+            if let Some(smoothed_rsi) = self.get_smooth(rsi, false){
+                return Some(smoothed_rsi);
+            }
             self.value
         }else{
             None
@@ -142,9 +153,28 @@ impl Rsi{
 
     }
 
-    pub fn get(&self) -> Option<f32>{
+    pub fn get_raw(&self) -> Option<f32>{
         
         self.value
+    }
+
+    pub fn get_smooth(&mut self, rsi: f32, new: bool) -> Option<f32>{
+        let is_ready = {self.rsi_buffer.len() == self.smoothing_length};
+
+        if is_ready{
+            match new{
+                true=> {self.rsi_buffer.pop_front();},
+                false=>{self.rsi_buffer.pop_back();}
+            }
+        }
+        self.rsi_buffer.push_back(rsi);
+
+        if is_ready{
+            let sum: f32 = self.rsi_buffer.iter().sum();
+            Some(sum / (self.smoothing_length as f32))
+        }else{
+            None
+        }
     }
 
 }
