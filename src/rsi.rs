@@ -56,15 +56,13 @@ impl RsiBuffer{
 
     fn push_current_close(&mut self, change: f32) {
 
-        if self.is_full(){
-            let expired_change = self.buff.pop_back().unwrap();
+        let expired_change = self.buff.pop_back().unwrap();
 
-                if expired_change > 0.0{
-                    self.sum_w -= expired_change;
-                }else{
-                    self.sum_l -= expired_change.abs();
-                }   
-        }
+            if expired_change > 0.0{
+                self.sum_w -= expired_change;
+            }else{
+                self.sum_l -= expired_change.abs();
+            }   
 
         if change > 0.0{
             self.sum_w += change;
@@ -120,16 +118,12 @@ impl Rsi{
 
     pub fn update_current_close(&mut self, price: f32) -> Option<f32> {
 
-        
-
         if self.buff.is_full(){
 
             if self.last_price != 0.0{
             let diff = price - self.last_price;
             self.buff.push_current_close(diff);
             }
-
-            self.last_price = price;
             
             let avg_gain = self.buff.sum_w / self.periods as f32;
             let avg_loss = self.buff.sum_l / self.periods as f32;
