@@ -120,14 +120,17 @@ impl Rsi{
 
     pub fn update_current_close(&mut self, price: f32) -> Option<f32> {
 
-        if self.last_price != 0.0{
-            let diff = price - self.last_price;
-            self.buff.push_current_close(diff);
-        }
-
-        self.last_price = price;
+        
 
         if self.buff.is_full(){
+
+            if self.last_price != 0.0{
+            let diff = price - self.last_price;
+            self.buff.push_current_close(diff);
+            }
+
+            self.last_price = price;
+            
             let avg_gain = self.buff.sum_w / self.periods as f32;
             let avg_loss = self.buff.sum_l / self.periods as f32;
 
