@@ -120,7 +120,7 @@ impl Rsi{
         Some(rsi)
     }
 
-    fn is_ready(&self) -> bool{
+    pub fn is_ready(&self) -> bool{
         self.buff.is_full()
     }
 }
