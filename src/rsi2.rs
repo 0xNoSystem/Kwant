@@ -74,7 +74,7 @@ impl Rsi{
         }
         };
         
-        self.buff.push_before_close(change);
+        self.buff.push(change);
         self.last_price = Some(price);
 
         if self.buff.is_full(){
