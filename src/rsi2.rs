@@ -100,7 +100,7 @@ impl Rsi{
             self.value
         }  
 
-    fn calc_rsi(&mut self, change: f32, last_avg_gain: f32, last_avg_loss: f32) -> f32{
+    fn calc_rsi(&mut self, change: f32, last_avg_gain: f32, last_avg_loss: f32) -> Option<f32>{
 
         let change_loss = (-change).max(0.0);
         let change_gain = (change).max(0.0);
@@ -117,7 +117,7 @@ impl Rsi{
         self.value = Some(rsi);
         self.buff.last_avg_gain = Some(avg_gain);
         self.buff.last_avg_loss = Some(avg_loss);
-        rsi
+        Some(rsi)
     }
 
 
