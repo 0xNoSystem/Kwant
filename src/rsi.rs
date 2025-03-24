@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 
 pub struct Rsi{
     periods: usize,
-    last_price: f32,
+    last_price: Option<f32>,
     buff: RsiBuffer,
     value: Option<f32>,
     rsi_buffer: VecDeque<f32>,
@@ -85,7 +85,7 @@ impl Rsi{
 
         Rsi{
             periods: periods,
-            last_price: 0_f32,
+            last_price: None,
             buff: RsiBuffer::new(periods - 1),
             value: None,
             rsi_buffer: VecDeque::with_capacity(smoothing_length),
@@ -95,12 +95,12 @@ impl Rsi{
 
     pub fn update(&mut self, price: f32) -> Option<f32>{
 
-        if self.last_price != 0.0{
-            let diff = price - self.last_price;
+        if let Some(last_price) = self.last_price{
+            let diff = price - last_price;
             self.buff.push(diff);
         }
 
-        self.last_price = price;
+        self.last_price = Some(price);
 
         if self.buff.is_full(){
             let avg_gain = self.buff.sum_w / self.periods as f32;
@@ -128,8 +128,8 @@ impl Rsi{
 
         if self.buff.is_full(){
 
-            if self.last_price != 0.0{
-            let diff = price - self.last_price;
+            if let Some(last_price) = self.last_price{
+            let diff = price - last_price;
             self.buff.push_current_close(diff);
             }
 
