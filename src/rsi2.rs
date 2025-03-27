@@ -177,6 +177,7 @@ impl Rsi{
              self.sma.push(rsi);
         }
         self.value = Some(rsi);
+        println!("{:?}", self.buff.changes_buffer);
        
         Some(rsi)
     }
