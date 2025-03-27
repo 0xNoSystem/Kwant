@@ -54,7 +54,7 @@ impl SmaOnRsi{
     fn get(&self) -> Option<f32>{
 
         if self.is_full(){
-            Some(self.current_sum / (self.length - 2 ) as f32)
+            Some(self.current_sum / (self.length) as f32)
         }else{
             None
         }
@@ -102,7 +102,6 @@ impl Rsi{
         };
 
         self.buff.push_before_close(change);
-        self.last_price = Some(price);
 
         if self.buff.is_full(){
            match (self.buff.last_avg_gain, self.buff.last_avg_loss) {
