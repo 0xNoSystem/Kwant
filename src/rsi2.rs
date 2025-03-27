@@ -7,7 +7,7 @@ pub struct Rsi{
     buff: RsiBuffer,
     last_price: Option<f32>,
     value: Option<f32>,
-
+    
 }
 
 struct RsiBuffer{
@@ -20,6 +20,10 @@ struct RsiBuffer{
 }
 
 
+
+
+
+
 impl Rsi{
 
     pub fn new(periods: usize) -> Self{
@@ -28,7 +32,7 @@ impl Rsi{
 
         Rsi{
             periods: periods,
-            buff: RsiBuffer::new(periods-1),
+            buff: RsiBuffer::new(periods),
             last_price: None,
             value: None,
         }
@@ -51,7 +55,7 @@ impl Rsi{
            match (self.buff.last_avg_gain, self.buff.last_avg_loss) {
             
             (Some(last_avg_gain), Some(last_avg_loss)) =>{
-                self.calc_rsi(change,last_avg_gain, last_avg_loss)
+                self.calc_rsi(change,last_avg_gain, last_avg_loss, false)
 
                 } 
 
@@ -83,7 +87,7 @@ impl Rsi{
             
             (Some(last_avg_gain), Some(last_avg_loss)) =>{
 
-                self.calc_rsi(change, last_avg_gain,last_avg_loss)
+                self.calc_rsi(change, last_avg_gain,last_avg_loss, true)
             }
 
             _ =>  { 
@@ -100,7 +104,7 @@ impl Rsi{
             self.value
         }  
 
-    fn calc_rsi(&mut self, change: f32, last_avg_gain: f32, last_avg_loss: f32) -> Option<f32>{
+    fn calc_rsi(&mut self, change: f32, last_avg_gain: f32, last_avg_loss: f32, after: bool) -> Option<f32>{
 
         let change_loss = (-change).max(0.0);
         let change_gain = (change).max(0.0);
@@ -114,9 +118,11 @@ impl Rsi{
             100.0 - (100.0 / (1.0 + (avg_gain / avg_loss)))
         };
         
+        if after{
+            self.buff.last_avg_gain = Some(avg_gain);
+            self.buff.last_avg_loss = Some(avg_loss); 
+        }
         self.value = Some(rsi);
-        self.buff.last_avg_gain = Some(avg_gain);
-        self.buff.last_avg_loss = Some(avg_loss);
         Some(rsi)
     }
 
@@ -194,11 +200,12 @@ impl RsiBuffer{
 
     fn init_last_avg(&mut self){
         if self.last_avg_gain.is_none(){
-                self.last_avg_gain = Some(self.sum_gain / (self.capacity + 1) as f32);
+                self.last_avg_gain = Some(self.sum_gain / (self.capacity) as f32);
             }
 
         if self.last_avg_loss.is_none(){
-            self.last_avg_loss = Some(self.sum_loss / (self.capacity + 1) as f32);
+            self.last_avg_loss = Some(self.sum_loss / (self.capacity) as f32);
         }
     }
+
 }
