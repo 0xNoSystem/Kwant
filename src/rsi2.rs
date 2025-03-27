@@ -45,10 +45,8 @@ impl SmaOnRsi{
         if self.is_full(){
             let expired_rsi = self.buff.pop_front().unwrap();
             self.current_sum -= expired_rsi;
-
-            self.buff.push_back(new_rsi);
         }
-
+        self.buff.push_back(new_rsi);
         self.current_sum += new_rsi;
 
     }
