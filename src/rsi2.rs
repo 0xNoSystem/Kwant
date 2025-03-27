@@ -7,7 +7,7 @@ pub struct Rsi{
     buff: RsiBuffer,
     last_price: Option<f32>,
     value: Option<f32>,
-    
+    sma: SmaOnRsi,
 }
 
 struct RsiBuffer{
@@ -20,13 +20,67 @@ struct RsiBuffer{
 }
 
 
+pub struct SmaOnRsi{
+    buff: VecDeque<f32>,
+    length: usize, 
+    current_sum: f32,
+}
+
+
+impl SmaOnRsi{
+    fn new(smoothing_length: usize) -> Self{
+       
+        assert!(smoothing_length > 3, "length field must be a positive integer > 3, ({})", smoothing_length);
+
+
+        SmaOnRsi{
+            buff: VecDeque::with_capacity(smoothing_length), 
+            length: smoothing_length,
+            current_sum: 0.0,
+        }
+    }
+
+    fn push(&mut self, new_rsi: f32){
+
+        if self.is_full(){
+            let expired_rsi = self.buff.pop_front().unwrap();
+            self.current_sum -= expired_rsi;
+
+            self.buff.push_back(new_rsi);
+        }
+
+        self.current_sum += new_rsi;
+
+    }
+
+    fn get(&self) -> Option<f32>{
+
+        if self.is_full(){
+            Some(self.current_sum / (self.length - 2 ) as f32)
+        }else{
+            None
+        }
+
+
+    }
+
+    fn is_full(&self) -> bool{
+
+        self.buff.len() == self.length
+    }
+}
+
+
+
+
+
 
 
 
 
 impl Rsi{
 
-    pub fn new(periods: usize) -> Self{
+    pub fn new(periods: usize, smoothing_length: usize) -> Self{
 
         assert!(periods > 1, "Periods field must be a positive integer > 1, ({})", periods);
 
@@ -35,6 +89,7 @@ impl Rsi{
             buff: RsiBuffer::new(periods),
             last_price: None,
             value: None,
+            sma: SmaOnRsi::new(smoothing_length)
         }
     }
 
@@ -123,11 +178,17 @@ impl Rsi{
             self.buff.last_avg_loss = Some(avg_loss); 
         }
         self.value = Some(rsi);
+        self.sma.push(rsi);
         Some(rsi)
     }
 
     pub fn is_ready(&self) -> bool{
         self.buff.is_full()
+    }
+
+    pub fn get_sma_rsi(&self) -> Option<f32>{
+
+        self.sma.get()
     }
 }
 
