@@ -176,9 +176,10 @@ impl Rsi{
         if after{
             self.buff.last_avg_gain = Some(avg_gain);
             self.buff.last_avg_loss = Some(avg_loss); 
+             self.sma.push(rsi);
         }
         self.value = Some(rsi);
-        self.sma.push(rsi);
+       
         Some(rsi)
     }
 
