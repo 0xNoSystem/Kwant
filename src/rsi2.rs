@@ -181,7 +181,8 @@ impl Rsi{
     }
 
     pub fn is_ready(&self) -> bool{
-        self.buff.is_full()
+
+        self.buff.is_full() && self.value.is_some() 
     }
 
     pub fn get_sma_rsi(&self) -> Option<f32>{
