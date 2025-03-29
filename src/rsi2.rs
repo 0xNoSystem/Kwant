@@ -11,8 +11,7 @@ pub struct Rsi{
 }
 
 struct RsiBuffer{
-    changes_buffer: VecDeque<f32>,
-    capacity: usize,
+    changes_buffer: VecDeque<f32>, 
     sum_gain: f32,
     sum_loss: f32,
     last_avg_gain: Option<f32>,
@@ -67,11 +66,6 @@ impl SmaOnRsi{
         self.buff.len() == self.length
     }
 }
-
-
-
-
-
 
 
 
@@ -199,7 +193,6 @@ impl RsiBuffer{
     fn new(capacity: usize) -> Self{
         RsiBuffer{
             changes_buffer: VecDeque::with_capacity(capacity), 
-            capacity: capacity,
             sum_gain: 0_f32,
             sum_loss: 0_f32,
             last_avg_gain: None,
@@ -255,16 +248,16 @@ impl RsiBuffer{
 
     fn is_full(&self) -> bool{
 
-        self.changes_buffer.len() == self.capacity
+        self.changes_buffer.len() == self.changes_buffer.capacity()
     }
 
     fn init_last_avg(&mut self){
         if self.last_avg_gain.is_none(){
-                self.last_avg_gain = Some(self.sum_gain / (self.capacity) as f32);
+                self.last_avg_gain = Some(self.sum_gain / (self.changes_buffer.capacity()) as f32);
             }
 
         if self.last_avg_loss.is_none(){
-            self.last_avg_loss = Some(self.sum_loss / (self.capacity) as f32);
+            self.last_avg_loss = Some(self.sum_loss / (self.changes_buffer.capacity()) as f32);
         }
     }
 
