@@ -1,2 +1,1 @@
-pub mod rsi;
-pub mod rsi2;
+pub mod indicators;

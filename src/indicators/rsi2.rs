@@ -1,12 +1,13 @@
 use std::collections::VecDeque;
-
+use crate::indicators::Price;
+use crate::indicators::Indicator;
 
 
 pub struct Rsi{
     periods: usize,
     buff: RsiBuffer,
     last_price: Option<f32>,
-    value: Option<f32>,
+    pub value: Option<f32>,
     sma: SmaOnRsi,
 }
 
@@ -85,72 +86,7 @@ impl Rsi{
         }
     }
 
-
-    pub fn update_before_close(&mut self, price: f32) -> Option<f32>{
-        let change = match self.last_price {
-        Some(prev_price) => price - prev_price,
-        None => {
-            self.last_price = Some(price);
-            return None;
-        }
-        };
-
-        self.buff.push_before_close(change);
-
-        if self.buff.is_full(){
-           match (self.buff.last_avg_gain, self.buff.last_avg_loss) {
-            
-            (Some(last_avg_gain), Some(last_avg_loss)) =>{
-                self.calc_rsi(change,last_avg_gain, last_avg_loss, false)
-
-                } 
-
-            _ => {
-                None
-            }}
-        }else{
-            None
-        }
-
-    }
-
-
-    pub fn update_after_close(&mut self, price: f32) -> Option<f32>{
-        let change = match self.last_price {
-        Some(prev_price) => price - prev_price,
-        None => {
-            self.last_price = Some(price);
-            return None;
-        }
-        };
-        
-        self.buff.push(change);
-        self.last_price = Some(price);
-
-        if self.buff.is_full(){
-    
-            match (self.buff.last_avg_gain, self.buff.last_avg_loss) {
-            
-            (Some(last_avg_gain), Some(last_avg_loss)) =>{
-
-                self.calc_rsi(change, last_avg_gain,last_avg_loss, true)
-            }
-
-            _ =>  { 
-                    None
-                }
-
-        }
-                  }else{ 
-            None
-        }
-    }
-    pub fn get_last(&self) -> Option<f32>{
-
-            self.value
-        }  
-
-    fn calc_rsi(&mut self, change: f32, last_avg_gain: f32, last_avg_loss: f32, after: bool) -> Option<f32>{
+     fn calc_rsi(&mut self, change: f32, last_avg_gain: f32, last_avg_loss: f32, after: bool) -> Option<f32>{
 
         let change_loss = (-change).max(0.0);
         let change_gain = (change).max(0.0);
@@ -173,17 +109,89 @@ impl Rsi{
 
         Some(rsi)
     }
-
-    pub fn is_ready(&self) -> bool{
-
-        self.buff.is_full() && self.value.is_some() 
-    }
-
+    
     pub fn get_sma_rsi(&self) -> Option<f32>{
 
         self.sma.get()
     }
 }
+
+
+
+impl Indicator for Rsi{
+
+    fn update_before_close(&mut self, price: Price){
+        let price = price.close;
+
+        let change = match self.last_price {
+            Some(prev_price) => price - prev_price,
+            None => {
+                self.last_price = Some(price);
+                return;
+            }
+        };
+
+        self.buff.push_before_close(change);
+
+        if self.buff.is_full(){
+           match (self.buff.last_avg_gain, self.buff.last_avg_loss) {
+            
+            (Some(last_avg_gain), Some(last_avg_loss)) =>{
+                self.calc_rsi(change,last_avg_gain, last_avg_loss, false);
+
+                } 
+
+            _ => {
+                return;
+            }}
+        }
+
+    }
+
+
+    fn update_after_close(&mut self, price: Price){
+        let price = price.close;
+        let change = match self.last_price {
+        Some(prev_price) => price - prev_price,
+        None => {
+            self.last_price = Some(price);
+            return;
+        }
+        };
+        
+        self.buff.push(change);
+        self.last_price = Some(price);
+
+        if self.buff.is_full(){
+    
+            match (self.buff.last_avg_gain, self.buff.last_avg_loss) {
+            
+            (Some(last_avg_gain), Some(last_avg_loss)) =>{
+
+                self.calc_rsi(change, last_avg_gain,last_avg_loss, true);
+            }
+
+            _ =>  { 
+                    return;
+                }
+
+            }
+                  }
+    }
+    fn get_last(&self) -> Option<f32>{
+
+            self.value
+        }  
+
+   
+
+    fn is_ready(&self) -> bool{
+
+        self.buff.is_full() && self.value.is_some() 
+    }
+
+}
+
 
 
 
