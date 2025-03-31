@@ -2,12 +2,11 @@ use std::collections::VecDeque;
 use crate::indicators::Price;
 use crate::indicators::Indicator;
 
-
 pub struct Rsi{
-    periods: usize,
+    pub periods: usize,
     buff: RsiBuffer,
     last_price: Option<f32>,
-    pub value: Option<f32>,
+    value: Option<f32>,
     sma: SmaOnRsi,
 }
 
@@ -79,7 +78,7 @@ impl Rsi{
 
         Rsi{
             periods: periods,
-            buff: RsiBuffer::new(periods),
+            buff: RsiBuffer::new(periods-1),
             last_price: None,
             value: None,
             sma: SmaOnRsi::new(smoothing_length)
@@ -190,6 +189,16 @@ impl Indicator for Rsi{
         self.buff.is_full() && self.value.is_some() 
     }
 
+    fn load(&mut self, price_data: &Vec<Price>){
+
+        if price_data.len() > 1 {
+            
+            for p in price_data{
+                self.update_after_close(*p);
+            }
+        };
+
+    }
 }
 
 

@@ -1,6 +1,8 @@
 [package]
-name = "indicators"
+name = "kwant"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+tokio = "1.44.1"
+hyperliquid_rust_sdk = { git = "https://github.com/0xNoSystem/hyperliquid-rust-sdk.git", branch = "master" }

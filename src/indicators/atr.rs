@@ -19,7 +19,7 @@ use crate::indicators::Indicator;
 
 
 pub struct Atr{            
-    periods: usize,
+    pub periods: usize,
     buff: VecDeque<f32>,
     last_price: Option<f32>,
     tr_sum: f32,
@@ -41,6 +41,8 @@ impl Atr{
         }
     }
 
+    
+
 }
 
 
@@ -48,8 +50,8 @@ impl Atr{
 impl Indicator for Atr{
 
     fn update_after_close(&mut self, last_price: Price){
-        println!("//{:?}", self.last_price);
-        println!("{}", self.buff.len());
+        
+
         let h_l = last_price.high - last_price.low;
         if self.last_price.is_none(){
             self.buff.push_back(h_l);
@@ -106,7 +108,17 @@ impl Indicator for Atr{
     }
 
     
-}
+    fn load(&mut self, price_data: &Vec<Price>){
+
+        if price_data.len() > 1 {
+            
+            for p in price_data{
+                self.update_after_close(*p);
+            }
+        };
+       }
+    }
+
 
 fn calc_tr(high: f32, low: f32, prev_close: f32) -> f32{
 
@@ -139,5 +151,5 @@ mod tests {
 
         atr.update_before_close(Price{high: 11.1, low: 10.04, close: 10.9, open:11.0});
         
+     }
     }
-}
