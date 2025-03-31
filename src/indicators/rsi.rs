@@ -2,14 +2,16 @@ use std::collections::VecDeque;
 use crate::indicators::Price;
 use crate::indicators::Indicator;
 
+#[derive(Clone, Debug)]
 pub struct Rsi{
     pub periods: usize,
     buff: RsiBuffer,
     last_price: Option<f32>,
     value: Option<f32>,
-    sma: SmaOnRsi,
+    sma: Option<SmaOnRsi>,
 }
 
+#[derive(Clone, Debug)]
 struct RsiBuffer{
     changes_buffer: VecDeque<f32>, 
     sum_gain: f32,
@@ -18,7 +20,7 @@ struct RsiBuffer{
     last_avg_loss: Option<f32>,
 }
 
-
+#[derive(Clone, Debug)]
 pub struct SmaOnRsi{
     buff: VecDeque<f32>,
     length: usize, 
@@ -72,16 +74,17 @@ impl SmaOnRsi{
 
 impl Rsi{
 
-    pub fn new(periods: usize, smoothing_length: usize) -> Self{
+    pub fn new(periods: usize, smoothing_length: Option<usize>) -> Self{
 
         assert!(periods > 1, "Periods field must be a positive integer > 1, ({})", periods);
+        let sma = smoothing_length.map(SmaOnRsi::new);
 
         Rsi{
             periods: periods,
             buff: RsiBuffer::new(periods-1),
             last_price: None,
             value: None,
-            sma: SmaOnRsi::new(smoothing_length)
+            sma: sma,
         }
     }
 
@@ -102,7 +105,9 @@ impl Rsi{
         if after{
             self.buff.last_avg_gain = Some(avg_gain);
             self.buff.last_avg_loss = Some(avg_loss); 
-             self.sma.push(rsi);
+            if let Some(sma) = &mut self.sma{
+                sma.push(rsi);
+            }
         }
         self.value = Some(rsi);
 
@@ -110,8 +115,11 @@ impl Rsi{
     }
     
     pub fn get_sma_rsi(&self) -> Option<f32>{
-
-        self.sma.get()
+        if let Some(sma) = &self.sma{
+            sma.get()
+        }else{
+            None
+        }
     }
 }
 
@@ -199,6 +207,15 @@ impl Indicator for Rsi{
         };
 
     }
+
+    fn reset(&mut self) {
+    self.buff = RsiBuffer::new(self.periods - 1);
+    self.last_price = None;
+    self.value = None;
+    if let Some(sma) = &mut self.sma {
+        *sma = SmaOnRsi::new(sma.length);
+    }
+}
 }
 
 
@@ -278,4 +295,18 @@ impl RsiBuffer{
         }
     }
 
+}
+
+impl Default for Rsi{
+
+    fn default() -> Self{
+
+        Rsi{
+            periods: 14,
+            buff: RsiBuffer::new(14-1),
+            last_price: None,
+            value: None,
+            sma: Some(SmaOnRsi::new(10)),
+        }
+    }
 }

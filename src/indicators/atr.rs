@@ -101,6 +101,13 @@ impl Indicator for Atr{
             }
         };
        }
+
+    fn reset(&mut self) {
+        self.buff.clear();
+        self.tr_sum = 0.0;
+        self.last_price = None;
+        self.value = None;
+    }
     }
 
 
@@ -137,3 +144,18 @@ mod tests {
         
      }
     }
+
+
+
+impl Default for Atr {
+    fn default() -> Self {
+
+        Atr {
+            periods: 14,
+            buff: VecDeque::with_capacity(14),
+            last_price: None,
+            tr_sum: 0.0,
+            value: None,
+        }
+    }
+}
