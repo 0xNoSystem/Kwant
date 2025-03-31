@@ -2,22 +2,6 @@ use std::collections::VecDeque;
 use crate::indicators::Price;
 use crate::indicators::Indicator;
 
-
-/*struct SignalEngine{
-    rsi: Rsi,
-    adx: Adx,
-    macd: Macd,
-    atr: Atr,
-    strategy: Strategy,
-}*/
-
-/*TR = max(
-    high - low,
-    abs(high - previous_close),
-    abs(low - previous_close)
-)*/
-
-
 pub struct Atr{            
     pub periods: usize,
     buff: VecDeque<f32>,
