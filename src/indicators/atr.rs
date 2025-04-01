@@ -3,7 +3,7 @@ use crate::indicators::Price;
 use crate::indicators::Indicator;
 
 pub struct Atr{            
-    pub periods: usize,
+    periods: usize,
     buff: VecDeque<f32>,
     last_price: Option<f32>,
     tr_sum: f32,
@@ -32,6 +32,10 @@ impl Atr{
 
 
 impl Indicator for Atr{
+
+    fn period(&self) -> usize{
+        self.periods
+    }
 
     fn update_after_close(&mut self, last_price: Price){
         

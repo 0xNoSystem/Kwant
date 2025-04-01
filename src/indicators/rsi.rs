@@ -5,7 +5,7 @@ use crate::indicators::StochRsi;
 
 #[derive(Clone, Debug)]
 pub struct Rsi{
-    pub periods: usize,
+    periods: usize,
     buff: RsiBuffer,
     last_price: Option<f32>,
     value: Option<f32>,
@@ -84,11 +84,11 @@ impl Rsi{
 
         Rsi{
             periods: periods,
-            buff: RsiBuffer::new(periods-1),
+            buff: RsiBuffer::new(periods),
             last_price: None,
             value: None,
             sma: sma,
-            stoch: StochRsi::new(stoch_length, 3, 3),
+            stoch: StochRsi::new(stoch_length, 1, 3),
         }
     }
 
@@ -235,6 +235,10 @@ impl Indicator for Rsi{
     }
     self.stoch.reset();
 }
+
+    fn period(&self) -> usize{
+        self.periods
+    }
 }
 
 

@@ -40,6 +40,10 @@ impl StochRsi {
         }
     }
 
+    pub fn periods(&self) -> usize {
+        self.length
+    }
+
     pub fn update_after_close(&mut self, rsi: f32) {
         if self.buffer.len() == self.length {
             let expired = self.buffer.pop_front().unwrap();
