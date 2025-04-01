@@ -88,7 +88,7 @@ impl Rsi{
             last_price: None,
             value: None,
             sma: sma,
-            stoch: StochRsi::new(stoch_length)
+            stoch: StochRsi::new(stoch_length, 3, 3),
         }
     }
 
@@ -133,11 +133,11 @@ impl Rsi{
     }
 
     pub fn get_stoch_rsi(&self) -> Option<f32> {
-        self.stoch.get()
+        self.stoch.get_k()
     }
 
     pub fn get_stoch_signal(&self) -> Option<f32> {
-        self.stoch.get_signal()
+        self.stoch.get_d()
     }
 }
 
@@ -233,6 +233,7 @@ impl Indicator for Rsi{
     if let Some(sma) = &mut self.sma {
         *sma = SmaOnRsi::new(sma.length);
     }
+    self.stoch.reset();
 }
 }
 
@@ -327,7 +328,7 @@ impl Default for Rsi{
             last_price: None,
             value: None,
             sma: Some(SmaOnRsi::new(10)),
-            stoch: StochRsi::new(14),
+            stoch: StochRsi::new(14, 3, 3),
         }
     }
 }

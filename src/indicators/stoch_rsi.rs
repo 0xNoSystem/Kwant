@@ -8,24 +8,35 @@ fn is_same(a: f32, b: f32) -> bool {
 pub struct StochRsi {
     buffer: VecDeque<f32>,
     length: usize,
-    value: Option<f32>,
     current_min: f32,
     current_max: f32,
-    signal_buffer: VecDeque<f32>,
-    signal_value: Option<f32>,
+
+    // Buffers for double smoothing
+    k_smoothing_buffer: VecDeque<f32>,
+    k_value: Option<f32>,
+    d_buffer: VecDeque<f32>,
+    d_value: Option<f32>,
 }
 
 impl StochRsi {
-    pub fn new(length: usize) -> Self {
-        assert!(length > 1, "Stoch length field must be a positive integer > 1, ({})", length);
+    /// `length` = how many RSI values to consider for raw stoch
+    /// `k_smoothing` = smoothing period for %K
+    /// `d_smoothing` = smoothing period for %D signal
+    pub fn new(length: usize, k_smoothing: usize, d_smoothing: usize) -> Self {
+        assert!(length > 1, "Stoch length must be > 1");
+        assert!(k_smoothing > 0, "k_smoothing must be > 0");
+        assert!(d_smoothing > 0, "d_smoothing must be > 0");
+
         Self {
             buffer: VecDeque::with_capacity(length),
             length,
-            value: None,
             current_min: f32::INFINITY,
             current_max: f32::NEG_INFINITY,
-            signal_buffer: VecDeque::with_capacity(3),
-            signal_value: None,
+
+            k_smoothing_buffer: VecDeque::with_capacity(k_smoothing),
+            k_value: None,
+            d_buffer: VecDeque::with_capacity(d_smoothing),
+            d_value: None,
         }
     }
 
@@ -37,13 +48,15 @@ impl StochRsi {
             }
         }
         self.buffer.push_back(rsi);
+
         if rsi < self.current_min {
             self.current_min = rsi;
         }
         if rsi > self.current_max {
             self.current_max = rsi;
         }
-        self.compute_stoch_value(rsi);
+
+        self.compute_stoch_rsi(rsi);
     }
 
     pub fn update_before_close(&mut self, rsi: f32) {
@@ -53,64 +66,86 @@ impl StochRsi {
             }
         }
         if self.buffer.len() == self.length {
-            let old_rsi = self.buffer.pop_back().unwrap();
-            if is_same(old_rsi, self.current_min) || is_same(old_rsi, self.current_max) {
+            let expired = self.buffer.pop_back().unwrap();
+            if is_same(expired, self.current_min) || is_same(expired, self.current_max) {
                 self.recompute_min_max();
             }
         }
         self.buffer.push_back(rsi);
+
         if rsi < self.current_min {
             self.current_min = rsi;
         }
         if rsi > self.current_max {
             self.current_max = rsi;
         }
-        self.compute_stoch_value(rsi);
+
+        self.compute_stoch_rsi(rsi);
     }
 
-    fn compute_stoch_value(&mut self, latest_rsi: f32) {
+    fn compute_stoch_rsi(&mut self, latest_rsi: f32) {
         if self.buffer.len() == self.length && self.current_max != self.current_min {
-            let stoch = (latest_rsi - self.current_min) / (self.current_max - self.current_min);
-            self.value = Some(stoch);
-            self.update_signal_line(stoch);
+            let raw_k = (latest_rsi - self.current_min) / (self.current_max - self.current_min);
+            self.push_k_smoothing(raw_k);
         } else {
-            self.value = None;
-            self.signal_value = None;
+            self.k_value = None;
+            self.d_value = None;
         }
     }
 
-    fn update_signal_line(&mut self, stoch: f32) {
-        if self.signal_buffer.len() == 3 {
-            self.signal_buffer.pop_front();
+    fn push_k_smoothing(&mut self, raw_k: f32) {
+        let k_len = self.k_smoothing_buffer.capacity();
+        if self.k_smoothing_buffer.len() == k_len {
+            self.k_smoothing_buffer.pop_front();
         }
-        self.signal_buffer.push_back(stoch);
-        if self.signal_buffer.len() == 3 {
-            let sum: f32 = self.signal_buffer.iter().sum();
-            self.signal_value = Some(sum / 3.0);
+        self.k_smoothing_buffer.push_back(raw_k);
+
+        if self.k_smoothing_buffer.len() == k_len {
+            let sum_k: f32 = self.k_smoothing_buffer.iter().sum();
+            let smoothed_k = sum_k / k_len as f32;
+            self.k_value = Some(smoothed_k);
+            self.push_d_smoothing(smoothed_k);
         } else {
-            self.signal_value = None;
+            self.k_value = None;
+            self.d_value = None;
         }
     }
 
-    pub fn get(&self) -> Option<f32> {
-        self.value
+    fn push_d_smoothing(&mut self, k_val: f32) {
+        let d_len = self.d_buffer.capacity();
+        if self.d_buffer.len() == d_len {
+            self.d_buffer.pop_front();
+        }
+        self.d_buffer.push_back(k_val);
+
+        if self.d_buffer.len() == d_len {
+            let sum_d: f32 = self.d_buffer.iter().sum();
+            self.d_value = Some(sum_d / d_len as f32);
+        } else {
+            self.d_value = None;
+        }
     }
 
-    pub fn get_signal(&self) -> Option<f32> {
-        self.signal_value
+    pub fn get_k(&self) -> Option<f32> {
+        self.k_value.map(|val| val * 100.0)
+    }
+
+    pub fn get_d(&self) -> Option<f32> {
+        self.d_value.map(|val| val * 100.0)
     }
 
     pub fn is_ready(&self) -> bool {
-        self.value.is_some()
+        self.k_value.is_some() && self.d_value.is_some()
     }
 
     pub fn reset(&mut self) {
         self.buffer.clear();
-        self.value = None;
         self.current_min = f32::INFINITY;
         self.current_max = f32::NEG_INFINITY;
-        self.signal_buffer.clear();
-        self.signal_value = None;
+        self.k_smoothing_buffer.clear();
+        self.k_value = None;
+        self.d_buffer.clear();
+        self.d_value = None;
     }
 
     fn recompute_min_max(&mut self) {
