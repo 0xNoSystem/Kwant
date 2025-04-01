@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 use crate::indicators::Price;
 use crate::indicators::Indicator;
 
+#[derive(Clone, Debug)]
 pub struct Atr{            
     periods: usize,
     buff: VecDeque<f32>,
