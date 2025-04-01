@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use crate::indicators::Price;
 use crate::indicators::Indicator;
+use crate::indicators::StochRsi;
 
 #[derive(Clone, Debug)]
 pub struct Rsi{
@@ -9,6 +10,7 @@ pub struct Rsi{
     last_price: Option<f32>,
     value: Option<f32>,
     sma: Option<SmaOnRsi>,
+    stoch: StochRsi,
 }
 
 #[derive(Clone, Debug)]
@@ -31,7 +33,7 @@ pub struct SmaOnRsi{
 impl SmaOnRsi{
     fn new(smoothing_length: usize) -> Self{
        
-        assert!(smoothing_length > 3, "length field must be a positive integer > 3, ({})", smoothing_length);
+        assert!(smoothing_length > 1, "length field must be a positive integer > 1, ({})", smoothing_length);
 
 
         SmaOnRsi{
@@ -74,9 +76,10 @@ impl SmaOnRsi{
 
 impl Rsi{
 
-    pub fn new(periods: usize, smoothing_length: Option<usize>) -> Self{
+    pub fn new(periods: usize,stoch_length: usize, smoothing_length: Option<usize>) -> Self{
 
         assert!(periods > 1, "Periods field must be a positive integer > 1, ({})", periods);
+        
         let sma = smoothing_length.map(SmaOnRsi::new);
 
         Rsi{
@@ -85,6 +88,7 @@ impl Rsi{
             last_price: None,
             value: None,
             sma: sma,
+            stoch: StochRsi::new(stoch_length)
         }
     }
 
@@ -105,10 +109,16 @@ impl Rsi{
         if after{
             self.buff.last_avg_gain = Some(avg_gain);
             self.buff.last_avg_loss = Some(avg_loss); 
+            self.stoch.update_after_close(rsi);
             if let Some(sma) = &mut self.sma{
                 sma.push(rsi);
             }
-        }
+        }else {
+            if self.stoch.is_ready() {
+                self.stoch.update_before_close(rsi);
+            };
+        };
+
         self.value = Some(rsi);
 
         Some(rsi)
@@ -120,6 +130,14 @@ impl Rsi{
         }else{
             None
         }
+    }
+
+    pub fn get_stoch_rsi(&self) -> Option<f32> {
+        self.stoch.get()
+    }
+
+    pub fn get_stoch_signal(&self) -> Option<f32> {
+        self.stoch.get_signal()
     }
 }
 
@@ -295,6 +313,8 @@ impl RsiBuffer{
         }
     }
 
+    
+
 }
 
 impl Default for Rsi{
@@ -307,6 +327,7 @@ impl Default for Rsi{
             last_price: None,
             value: None,
             sma: Some(SmaOnRsi::new(10)),
+            stoch: StochRsi::new(14),
         }
     }
 }
