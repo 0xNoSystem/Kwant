@@ -84,7 +84,7 @@ impl Rsi{
 
         Rsi{
             periods: periods,
-            buff: RsiBuffer::new(periods),
+            buff: RsiBuffer::new(periods - 1),
             last_price: None,
             value: None,
             sma: sma,

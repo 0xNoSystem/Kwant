@@ -60,7 +60,7 @@ impl StochRsi {
             self.current_max = rsi;
         }
 
-        self.compute_stoch_rsi(rsi);
+        self.compute_stoch_rsi(rsi, true);
     }
 
     pub fn update_before_close(&mut self, rsi: f32) {
@@ -84,44 +84,61 @@ impl StochRsi {
             self.current_max = rsi;
         }
 
-        self.compute_stoch_rsi(rsi);
+        self.compute_stoch_rsi(rsi, false);
     }
 
-    fn compute_stoch_rsi(&mut self, latest_rsi: f32) {
+    fn compute_stoch_rsi(&mut self, latest_rsi: f32, after: bool) {
         if self.buffer.len() == self.length && self.current_max != self.current_min {
             let raw_k = (latest_rsi - self.current_min) / (self.current_max - self.current_min);
-            self.push_k_smoothing(raw_k);
+            self.push_k_smoothing(raw_k, after);
         } else {
             self.k_value = None;
             self.d_value = None;
         }
     }
 
-    fn push_k_smoothing(&mut self, raw_k: f32) {
-        let k_len = self.k_smoothing_buffer.capacity();
-        if self.k_smoothing_buffer.len() == k_len {
-            self.k_smoothing_buffer.pop_front();
-        }
-        self.k_smoothing_buffer.push_back(raw_k);
+    fn push_k_smoothing(&mut self, raw_k: f32, after: bool) {
 
+        let k_len = self.k_smoothing_buffer.capacity();
+        
+        if self.k_smoothing_buffer.len() == k_len{
+            if after{
+                self.k_smoothing_buffer.pop_front();
+            }else{
+                self.k_smoothing_buffer.pop_back();
+            }
+        }else{
+            if after{
+                self.k_smoothing_buffer.push_back(raw_k);
+            }
+        }
+        
         if self.k_smoothing_buffer.len() == k_len {
             let sum_k: f32 = self.k_smoothing_buffer.iter().sum();
             let smoothed_k = sum_k / k_len as f32;
             self.k_value = Some(smoothed_k);
-            self.push_d_smoothing(smoothed_k);
+            self.push_d_smoothing(smoothed_k, after);
         } else {
             self.k_value = None;
             self.d_value = None;
         }
     }
 
-    fn push_d_smoothing(&mut self, k_val: f32) {
+    fn push_d_smoothing(&mut self, k_val: f32, after: bool) {
         let d_len = self.d_buffer.capacity();
-        if self.d_buffer.len() == d_len {
-            self.d_buffer.pop_front();
+        
+        if self.d_buffer.len() == d_len{
+            if after{
+                self.d_buffer.pop_front();
+            }else{
+                self.d_buffer.pop_back();
+            }
+        }else{  
+            if after{
+                self.d_buffer.push_back(k_val);
+            }
         }
-        self.d_buffer.push_back(k_val);
-
+        // If the buffer is not full, we don't compute the average
         if self.d_buffer.len() == d_len {
             let sum_d: f32 = self.d_buffer.iter().sum();
             self.d_value = Some(sum_d / d_len as f32);
@@ -165,3 +182,5 @@ impl StochRsi {
         }
     }
 }
+
+
