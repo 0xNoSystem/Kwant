@@ -104,6 +104,7 @@ impl StochRsi {
         if self.k_smoothing_buffer.len() == k_len{
             if after{
                 self.k_smoothing_buffer.pop_front();
+                self.k_smoothing_buffer.push_back(raw_k);
             }else{
                 self.k_smoothing_buffer.pop_back();
                 self.k_smoothing_buffer.push_back(raw_k);
@@ -131,6 +132,7 @@ impl StochRsi {
         if self.d_buffer.len() == d_len{
             if after{
                 self.d_buffer.pop_front();
+                self.d_buffer.push_back(k_val);
             }else{
                 self.d_buffer.pop_back();
                 self.d_buffer.push_back(k_val);
