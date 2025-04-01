@@ -106,6 +106,7 @@ impl StochRsi {
                 self.k_smoothing_buffer.pop_front();
             }else{
                 self.k_smoothing_buffer.pop_back();
+                self.k_smoothing_buffer.push_back(raw_k);
             }
         }else{
             if after{
@@ -132,6 +133,7 @@ impl StochRsi {
                 self.d_buffer.pop_front();
             }else{
                 self.d_buffer.pop_back();
+                self.d_buffer.push_back(k_val);
             }
         }else{  
             if after{
