@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use crate::indicators::{Price, Indicator};
 
 pub struct Adx {
@@ -15,6 +16,7 @@ struct AdxBuffer {
     prev_dm_pos: Option<f32>,
     prev_dm_neg: Option<f32>,
     prev_tr: Option<f32>,
+    dx_buffer: VecDeque<f32>,
     dx: Option<f32>,
 }
 
@@ -31,19 +33,26 @@ impl Adx {
     }
 
     fn calc_adx(&mut self, dx: f32, after: bool) {
-        let length = self.periods as f32;
-        if let Some(prev_adx) = self.prev_value {
-            let new_adx = prev_adx - (prev_adx / length) + (dx / length);
-            self.value = Some(new_adx);
-            if after {
-                self.prev_value = Some(new_adx);
-            }
-        } else if after {
-            let initial_adx = dx / length;
-            self.prev_value = Some(initial_adx);
-            self.value = Some(initial_adx);
+    let length = self.periods;
+
+    if self.prev_value.is_none(){
+        if after{
+            self.buff.dx_buffer.push_back(dx);
+            if self.buff.dx_buffer.len() == length {
+                let sum: f32 = self.buff.dx_buffer.iter().sum();
+                let initial_adx = sum / length as f32;
+                self.prev_value = Some(initial_adx);
+                self.value = Some(initial_adx);
+        }}
+    } else {
+        let prev_adx = self.prev_value.unwrap();
+        let new_adx = (prev_adx * (length as f32 - 1.0) + dx) / length as f32;
+        self.value = Some(new_adx);
+        if after {
+            self.prev_value = Some(new_adx);
         }
     }
+}
 }
 
 impl Indicator for Adx {
@@ -68,19 +77,21 @@ impl Indicator for Adx {
     }
 
     fn update_before_close(&mut self, price: Price) {
-        let h = price.high;
-        let l = price.low;
-        let h_l = h - l;
+        if self.is_ready(){
+            let h = price.high;
+            let l = price.low;
+            let h_l = h - l;
 
-        if let Some(prev_close) = self.prev_close {
-            let tr = h_l.max((h - prev_close).abs().max((l - prev_close).abs()));
-            self.buff.update_before_close(h, l, tr);
-        }
+            if let Some(prev_close) = self.prev_close {
+                let tr = h_l.max((h - prev_close).abs().max((l - prev_close).abs()));
+                self.buff.update_before_close(h, l, tr);
+            }
 
-        if let Some(dx) = self.buff.dx {
-            self.calc_adx(dx, false);
+            if let Some(dx) = self.buff.dx {
+                self.calc_adx(dx, false);
+            }
         }
-    }
+}
 
     fn load(&mut self, price_data: &Vec<Price>) {
         for p in price_data {
@@ -118,6 +129,7 @@ impl AdxBuffer {
             prev_dm_pos: None,
             prev_dm_neg: None,
             prev_tr: None,
+            dx_buffer: VecDeque::with_capacity(di_length),
             dx: None,
         }
     }
