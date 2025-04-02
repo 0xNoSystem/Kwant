@@ -154,7 +154,6 @@ mod tests {
 
 impl Default for Atr {
     fn default() -> Self {
-
         Atr {
             periods: 14,
             buff: VecDeque::with_capacity(14),

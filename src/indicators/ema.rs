@@ -102,7 +102,12 @@ impl EmaCross{
 }
 
 
+impl Default for EmaCross{
+    fn default() -> Self{
 
+        EmaCross::new(9, 21)
+    }
+}
 
 
 

@@ -224,3 +224,9 @@ impl AdxBuffer {
         self.dx = None;
     }
 }
+
+impl Default for Adx {
+    fn default() -> Self {
+        Adx::new(14, 14)
+    }
+}
