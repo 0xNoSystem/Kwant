@@ -53,7 +53,7 @@ impl Indicator for Atr{
             let sum: f32 = self.warmup_trs.iter().sum();
             let initial_atr = sum / self.periods as f32;
             self.value = Some(initial_atr);
-            self.prev_value = Some(new_atr);
+            self.prev_value = Some(initial_atr);
         }
     } else if let Some(prev_atr) = self.value {
         let new_atr = (prev_atr * (self.periods as f32 - 1.0) + tr) / self.periods as f32;
