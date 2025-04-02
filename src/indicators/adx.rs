@@ -65,6 +65,7 @@ impl Indicator for Adx{
 
         if let Some(prev_close) = self.prev_close{
             let tr = h_l.max((h - prev_close).abs().max((l - prev_close).abs()));
+            println!("TR: {}", tr);
             self.buff.update_after_close(h, l, tr);
         }else{
             let tr = h_l;
@@ -198,7 +199,7 @@ impl AdxBuffer{
     } else {
         0.0
     };
-
+    println!("DX: {}", dx);
     self.dx = Some(dx);
 }
 
