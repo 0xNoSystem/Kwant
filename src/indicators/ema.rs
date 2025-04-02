@@ -47,7 +47,7 @@ impl Indicator for Ema{
         
         if let Some(last_ema)  = self.value{
             let ema = (self.alpha*close) + (1.0 - self.alpha)*last_ema;
-            self.slope = Some((ema - last_ema).atan().to_degrees());
+            self.slope = Some(((ema - last_ema) / ema)*100.0);
             self.prev_value = Some(last_ema);
             self.value = Some(ema);
         }else{
@@ -65,7 +65,7 @@ impl Indicator for Ema{
         if let Some(last_ema) = self.prev_value{
             let close = price.close;
             let ema = (self.alpha*close) + (1.0 - self.alpha)*last_ema;
-            self.slope = Some((ema - last_ema).atan().to_degrees());
+            self.slope = Some(((ema - last_ema)/ema)*100.0);
             self.value = Some(ema);
         }
 
