@@ -5,6 +5,7 @@ use crate::indicators::Indicator;
 pub struct Atr {
     periods: usize,
     value: Option<f32>,
+    prev_value: Option<f32>,
     prev_close: Option<f32>,
     warmup_trs: Vec<f32>,
 }
@@ -55,6 +56,7 @@ impl Indicator for Atr{
     } else if let Some(prev_atr) = self.value {
         let new_atr = (prev_atr * (self.periods as f32 - 1.0) + tr) / self.periods as f32;
         self.value = Some(new_atr);
+        self.prev_value = Some(new_atr);
     }
 
     self.prev_close = Some(close);
@@ -63,7 +65,7 @@ impl Indicator for Atr{
 
 
     fn update_before_close(&mut self, price: Price) {
-    if let (Some(prev_close), Some(prev_atr)) = (self.prev_close, self.value) {
+    if let (Some(prev_close), Some(prev_atr)) = (self.prev_close, self.prev_value) {
         let tr = calc_tr(price.high, price.low, prev_close);
         let provisional_atr = (prev_atr * (self.periods as f32 - 1.0) + tr) / self.periods as f32;
         self.value = Some(provisional_atr);
@@ -88,6 +90,7 @@ impl Indicator for Atr{
     fn reset(&mut self) {
     self.value = None;
     self.prev_close = None;
+    self.prev_value = None;
     self.warmup_trs.clear();
         }
 
@@ -102,6 +105,13 @@ fn calc_tr(high: f32, low: f32, prev_close: f32) -> f32{
 
         f32::max(high - low, f32::max((high - prev_close).abs(), (low - prev_close).abs()))
     }
+
+
+impl Default for Atr {
+    fn default() -> Self {
+        Atr::new(14)
+    }
+}
 
 
 
@@ -134,8 +144,3 @@ mod tests {
 
 
 
-impl Default for Atr {
-    fn default() -> Self {
-        Atr::new(14)
-    }
-}
