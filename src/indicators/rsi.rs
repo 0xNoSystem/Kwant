@@ -88,7 +88,7 @@ impl Rsi{
             last_price: None,
             value: None,
             sma: sma,
-            stoch: StochRsi::new(stoch_length, 1, 3),
+            stoch: StochRsi::new(stoch_length, 3, 3),
         }
     }
 
