@@ -93,6 +93,12 @@ impl EmaCross{
         }
     }
 
+    pub fn reset(&mut self){
+        self.short.reset();
+        self.long.reset();
+        self.uptrend = None;
+    }
+
 }
 
 

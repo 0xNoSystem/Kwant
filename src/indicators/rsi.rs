@@ -217,12 +217,9 @@ impl Indicator for Rsi{
 
     fn load(&mut self, price_data: &Vec<Price>){
 
-        if price_data.len() > 1 {
-            
-            for p in price_data{
-                self.update_after_close(*p);
-            }
-        };
+        for p in price_data{
+            self.update_after_close(*p);
+        }
 
     }
 
