@@ -142,10 +142,10 @@ impl AdxBuffer{
     fn update_after_close(&mut self, high: f32, low: f32, tr: f32){
 
         if let Some(smoothed_tr) = self.prev_tr{
-            let tr = smoothed_tr - (smoothed_tr / self.di_length as f32) + tr;
+            let tr = smoothed_tr - (smoothed_tr / self.di_length as f32) + (tr / self.di_length as f32);
             self.prev_tr = Some(tr);
         }else{
-            self.prev_tr = Some(tr);
+            self.prev_tr = Some(tr / self.di_length as f32);
         }
 
         if let (Some(prev_high), Some(prev_low)) = (self.prev_high, self.prev_low){
