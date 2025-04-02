@@ -1,14 +1,12 @@
-use std::collections::VecDeque;
 use crate::indicators::Price;
 use crate::indicators::Indicator;
 
 #[derive(Clone, Debug)]
-pub struct Atr{            
+pub struct Atr {
     periods: usize,
-    buff: VecDeque<f32>,
-    last_price: Option<f32>,
-    tr_sum: f32,
     value: Option<f32>,
+    prev_close: Option<f32>,
+    warmup_trs: Vec<f32>,
 }
 
 
@@ -19,14 +17,12 @@ impl Atr{
         assert!(periods > 0, "Atr periods must be a periods > 0, ({})", periods);
         Atr{
             periods,
-            buff: VecDeque::with_capacity(periods),
-            last_price: None,
-            tr_sum: 0.0,
+            prev_close: None,
+            warmup_trs: Vec::with_capacity(periods),
             value: None,
         }
     }
 
-    
 
 }
 
@@ -38,62 +34,44 @@ impl Indicator for Atr{
         self.periods
     }
 
-    fn update_after_close(&mut self, last_price: Price){
-        
+    fn update_after_close(&mut self, price: Price) {
+    let high = price.high;
+    let low = price.low;
+    let close = price.close;
 
-        let h_l = last_price.high - last_price.low;
-        if self.last_price.is_none(){
-            self.buff.push_back(h_l);
-            self.tr_sum += h_l;
-            self.last_price = Some(last_price.close);
-            return;
-        }   
+    let tr = if let Some(prev_close) = self.prev_close {
+        calc_tr(high, low, prev_close)
+    } else {
+        high - low
+    };
 
-        let prev_close = self.last_price.unwrap();
-        let tr = calc_tr(last_price.high, last_price.low, prev_close);
-
-        if self.is_ready(){
-            let expired_tr = self.buff.pop_front().unwrap();
-            self.tr_sum -= expired_tr;
+    if self.value.is_none() {
+        self.warmup_trs.push(tr);
+        if self.warmup_trs.len() == self.periods {
+            let sum: f32 = self.warmup_trs.iter().sum();
+            let initial_atr = sum / self.periods as f32;
+            self.value = Some(initial_atr);
         }
-            
-        self.buff.push_back(tr);
-        self.tr_sum += tr;
-        self.last_price = Some(last_price.close);
-        
-        if self.is_ready(){
-            self.value = Some(self.tr_sum/self.periods as f32); 
-        }
-       
+    } else if let Some(prev_atr) = self.value {
+        let new_atr = (prev_atr * (self.periods as f32 - 1.0) + tr) / self.periods as f32;
+        self.value = Some(new_atr);
     }
 
+    self.prev_close = Some(close);
+}
 
-    fn update_before_close(&mut self, last_price: Price){
-    
-        if self.is_ready(){
-            let prev_close = self.last_price.unwrap();
-            if prev_close == last_price.open{
-                return;
-            }
-            
-            let last_tr = self.buff.pop_back().unwrap();
-            self.tr_sum -= last_tr;
 
-            let tr = calc_tr(last_price.high, last_price.low, prev_close);
-            self.buff.push_back(tr);
-            self.tr_sum += tr;
 
-            self.value = Some(self.tr_sum/self.periods as f32);
-        }
+    fn update_before_close(&mut self, price: Price) {
+    if let (Some(prev_close), Some(prev_atr)) = (self.prev_close, self.value) {
+        let tr = calc_tr(price.high, price.low, prev_close);
+        let provisional_atr = (prev_atr * (self.periods as f32 - 1.0) + tr) / self.periods as f32;
+        self.value = Some(provisional_atr);
     }
+}
 
     fn get_last(&self) -> Option<f32>{
         self.value
-    }
-
-    fn is_ready(&self) -> bool{
-
-        self.buff.len() == self.buff.capacity()
     }
 
     
@@ -108,11 +86,15 @@ impl Indicator for Atr{
        }
 
     fn reset(&mut self) {
-        self.buff.clear();
-        self.tr_sum = 0.0;
-        self.last_price = None;
-        self.value = None;
+    self.value = None;
+    self.prev_close = None;
+    self.warmup_trs.clear();
+        }
+
+    fn is_ready(&self) -> bool {
+        self.value.is_some()
     }
+
     }
 
 
@@ -154,13 +136,6 @@ mod tests {
 
 impl Default for Atr {
     fn default() -> Self {
-
-        Atr {
-            periods: 14,
-            buff: VecDeque::with_capacity(14),
-            last_price: None,
-            tr_sum: 0.0,
-            value: None,
-        }
+        Atr::new(14)
     }
 }

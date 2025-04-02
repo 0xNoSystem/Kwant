@@ -11,7 +11,7 @@ pub struct Ema{
     slope: Option<f32>,
 }
 
-
+#[derive(Clone, Debug)]
 pub struct EmaCross{
     pub short: Ema,
     pub long: Ema,
