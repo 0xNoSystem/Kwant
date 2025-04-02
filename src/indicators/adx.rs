@@ -36,22 +36,23 @@ impl Adx{
         }
     }
 
-    fn calc_adx(&mut self, dx: f32, after: bool){
-
-        if let Some(adx) = self.prev_value{
-            let new = adx - (adx / self.periods as f32) + dx;
-            if let Some(value) = self.value{
-                if after{
-                    self.prev_value = Some(value);
-                }
-            }   
-            self.value = Some(new);
-        }else{ 
-            if after{
-                self.prev_value = Some(dx);
+    fn calc_adx(&mut self, dx: f32, after: bool) {
+    if let Some(adx) = self.prev_value {
+        // Divide dx by periods for correct smoothing:
+        let new = adx - (adx / self.periods as f32) + (dx / self.periods as f32);
+        if let Some(value) = self.value {
+            if after {
+                self.prev_value = Some(value);
             }
         }
+        self.value = Some(new);
+    } else {
+        if after {
+            self.prev_value = Some(dx / self.periods as f32);
+        }
     }
+}
+
 }
 
 
