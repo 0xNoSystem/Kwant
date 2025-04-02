@@ -20,6 +20,7 @@ impl Atr{
             periods,
             prev_close: None,
             warmup_trs: Vec::with_capacity(periods),
+            prev_value: None,
             value: None,
         }
     }
