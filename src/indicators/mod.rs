@@ -9,6 +9,7 @@ pub mod types;
 //pub use rsi::Rsi;
 pub use rsi::Rsi;
 pub use ema::Ema;
+pub use ema::EmaCross;
 pub use sma::Sma;
 pub use stoch_rsi::StochRsi;
 pub use atr::Atr;
