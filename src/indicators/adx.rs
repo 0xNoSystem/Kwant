@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use crate::indicators::{Price, Indicator};
 
+#[derive(Clone, Debug)]
 pub struct Adx {
     periods: usize,
     buff: AdxBuffer,
@@ -9,6 +10,7 @@ pub struct Adx {
     value: Option<f32>,
 }
 
+#[derive(Clone, Debug)]
 struct AdxBuffer {
     di_length: usize,
     prev_high: Option<f32>,
@@ -91,7 +93,9 @@ impl Indicator for Adx {
                 self.calc_adx(dx, false);
             }
         }
-}
+    }   
+
+
 
     fn load(&mut self, price_data: &Vec<Price>) {
         for p in price_data {
