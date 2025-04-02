@@ -76,7 +76,7 @@ impl SmaOnRsi{
 
 impl Rsi{
 
-    pub fn new(periods: usize,stoch_length: usize, smoothing_length: Option<usize>) -> Self{
+    pub fn new(periods: usize,stoch_length: usize,smoothing_length: Option<usize>) -> Self{
 
         assert!(periods > 1, "Periods field must be a positive integer > 1, ({})", periods);
         
@@ -88,7 +88,7 @@ impl Rsi{
             last_price: None,
             value: None,
             sma: sma,
-            stoch: StochRsi::new(stoch_length, 1, 3),
+            stoch: StochRsi::new(stoch_length, 3, 3),
         }
     }
 
