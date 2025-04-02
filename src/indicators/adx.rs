@@ -155,12 +155,12 @@ impl AdxBuffer{
             let dm_pos = if up_move > down_move && up_move > 0.0 { up_move } else { 0.0 };
             let dm_neg = if down_move > up_move && down_move > 0.0 { down_move } else { 0.0 };
             if let (Some(prev_dm_pos), Some(prev_dm_neg)) = (self.prev_dm_pos, self.prev_dm_neg){
-                let smoothed_dm_pos = prev_dm_pos - (prev_dm_pos /self.di_length as f32) + dm_pos;
-                let smoothed_dm_neg = prev_dm_neg - (prev_dm_neg /self.di_length as f32) + dm_neg;
+                let smoothed_dm_pos = prev_dm_pos - (prev_dm_pos /self.di_length as f32) + (dm_pos/ self.di_length as f32);
+                let smoothed_dm_neg = prev_dm_neg - (prev_dm_neg /self.di_length as f32) + (dm_neg/ self.di_length as f32);
                 self.calc_dx(smoothed_dm_pos, smoothed_dm_neg, self.prev_tr.unwrap());
                 };
-            self.prev_dm_pos = Some(dm_pos);
-            self.prev_dm_neg =  Some(dm_neg);
+            self.prev_dm_pos = Some(dm_pos/ self.di_length as f32);
+            self.prev_dm_neg =  Some(dm_neg/ self.di_length as f32);
         }
 
         self.prev_high = Some(high);
@@ -170,7 +170,7 @@ impl AdxBuffer{
     fn update_before_close(&mut self, high: f32, low: f32, mut tr: f32){
         
         if let Some(smoothed_tr) = self.prev_tr{
-            tr += smoothed_tr - (smoothed_tr / self.di_length as f32);
+            tr = smoothed_tr - (smoothed_tr / self.di_length as f32) + (tr / self.di_length as f32);
         }
 
         if let (Some(prev_high), Some(prev_low)) = (self.prev_high, self.prev_low){
@@ -179,8 +179,8 @@ impl AdxBuffer{
             let dm_pos = if up_move > down_move && up_move > 0.0 { up_move } else { 0.0 };
             let dm_neg = if down_move > up_move && down_move > 0.0 { down_move } else { 0.0 };
             if let (Some(prev_dm_pos), Some(prev_dm_neg)) = (self.prev_dm_pos, self.prev_dm_neg){
-                    let smoothed_dm_pos = prev_dm_pos - (prev_dm_pos /self.di_length as f32) + dm_pos;
-                    let smoothed_dm_neg = prev_dm_neg - (prev_dm_neg /self.di_length as f32) + dm_neg;
+                    let smoothed_dm_pos = prev_dm_pos - (prev_dm_pos /self.di_length as f32) + (dm_pos/ self.di_length as f32);
+                    let smoothed_dm_neg = prev_dm_neg - (prev_dm_neg /self.di_length as f32) + (dm_neg/ self.di_length as f32);
                     self.calc_dx(smoothed_dm_pos, smoothed_dm_neg, tr);
             }
         }
