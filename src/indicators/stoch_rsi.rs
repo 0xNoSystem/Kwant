@@ -64,27 +64,28 @@ impl StochRsi {
     }
 
     pub fn update_before_close(&mut self, rsi: f32) {
-        if let Some(&old_rsi) = self.buffer.back() {
-            if is_same(old_rsi, rsi) {
-                return;
+        if self.is_ready(){
+            if let Some(&old_rsi) = self.buffer.back() {
+                if is_same(old_rsi, rsi) {
+                    return;
+                }
             }
-        }
-        if self.buffer.len() == self.length {
-            let expired = self.buffer.pop_back().unwrap();
-            if is_same(expired, self.current_min) || is_same(expired, self.current_max) {
-                self.recompute_min_max();
+            if self.buffer.len() == self.length {
+                let expired = self.buffer.pop_back().unwrap();
+                if is_same(expired, self.current_min) || is_same(expired, self.current_max) {
+                    self.recompute_min_max();
+                }
             }
-        }
-        self.buffer.push_back(rsi);
+            self.buffer.push_back(rsi);
 
-        if rsi < self.current_min {
-            self.current_min = rsi;
+            if rsi < self.current_min {
+                self.current_min = rsi;
+            }
+            if rsi > self.current_max {
+                self.current_max = rsi;
+            }
+            self.compute_stoch_rsi(rsi, false);
         }
-        if rsi > self.current_max {
-            self.current_max = rsi;
-        }
-
-        self.compute_stoch_rsi(rsi, false);
     }
 
     fn compute_stoch_rsi(&mut self, latest_rsi: f32, after: bool) {

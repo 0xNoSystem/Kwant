@@ -16,6 +16,7 @@ pub struct EmaCross{
     pub short: Ema,
     pub long: Ema,
     uptrend: Option<bool>,
+    
 }
 
 
@@ -32,7 +33,7 @@ impl EmaCross{
         }
     }
 
-    fn check_for_cross(&mut self) -> Option<bool> {
+    pub fn check_for_cross(&mut self) -> Option<bool> {
 
         if let (Some(short_value), Some(long_value)) = (self.short.get_last(), self.long.get_last()) {
             
@@ -48,15 +49,20 @@ impl EmaCross{
         }
     }
 
-    pub fn update(&mut self,price: Price ,after_close: bool) -> Option<bool>{
+    pub fn update(&mut self,price: Price ,after_close: bool){
 
         if after_close{
             self.update_after_close(price);
         }else{
             self.update_before_close(price);
         }
+    }
 
+    pub fn update_and_check_for_cross(&mut self,price: Price ,after_close: bool) -> Option<bool>{
+
+        self.update(price, after_close);
         self.check_for_cross()
+
     }
 
     fn update_after_close(&mut self, price: Price){
@@ -78,7 +84,7 @@ impl EmaCross{
     }
 
     pub fn get_trend(&self) -> Option<bool>{
-        self.uptrend
+        Some(self.short.get_last() > self.long.get_last())
     }
 
     pub fn periods(&self) -> (usize,usize){

@@ -46,8 +46,8 @@ impl Indicator for Sma{
 
     fn update_before_close(&mut self, price: Price){
 
-        let price = price.close;
         if self.is_ready(){
+            let price = price.close;
             let last_price = self.buff.pop_back().unwrap();
             self.sum -= last_price;
             self.buff.push_back(price);
