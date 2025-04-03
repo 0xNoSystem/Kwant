@@ -26,7 +26,14 @@ impl Atr{
         }
     }
 
-    
+    pub fn normalized(&self, price: f32) -> Option<f32> {
+    if price.abs() < f32::EPSILON {
+        return None;
+    }
+    self.value.map(|value| (value / price) * 100.0)
+}
+
+
 
 }
 

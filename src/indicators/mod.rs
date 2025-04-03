@@ -7,7 +7,6 @@ pub mod adx;
 pub mod indicator;
 pub mod types;
 
-//pub use rsi::Rsi;
 pub use rsi::Rsi;
 pub use ema::Ema;
 pub use ema::EmaCross;
