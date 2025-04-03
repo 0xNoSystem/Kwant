@@ -92,7 +92,11 @@ impl EmaCross{
     }
 
     pub fn get_trend(&self) -> Option<bool>{
-        Some(self.short.get_last() >= self.long.get_last())
+        if self.is_ready(){
+            Some(self.short.get_last() >= self.long.get_last())
+        }else{
+            None
+        }
     }
 
     pub fn periods(&self) -> (usize,usize){
