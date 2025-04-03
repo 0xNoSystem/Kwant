@@ -86,6 +86,15 @@ impl StochRsi {
             }
             self.compute_stoch_rsi(rsi, false);
         }
+
+    }
+
+    pub fn get_diff(&self) -> Option<f32>{
+        if let (Some(k), Some(d)) = (self.k_value, self.d_value){
+            return Some(k - d);
+        };
+        
+        None
     }
 
     fn compute_stoch_rsi(&mut self, latest_rsi: f32, after: bool) {
