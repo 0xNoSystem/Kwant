@@ -146,30 +146,34 @@ impl Rsi{
 impl Indicator for Rsi{
 
     fn update_before_close(&mut self, price: Price){
-        let price = price.close;
+        if !self.is_ready(){
+            return;
+        }else{
+            let price = price.close;
 
-        let change = match self.last_price {
-            Some(prev_price) => price - prev_price,
-            None => {
-                self.last_price = Some(price);
-                return;
+            let change = match self.last_price {
+                Some(prev_price) => price - prev_price,
+                None => {
+                    self.last_price = Some(price);
+                    return;
+                }
+            };
+
+            self.buff.push_before_close(change);
+
+            if self.buff.is_full(){
+            match (self.buff.last_avg_gain, self.buff.last_avg_loss) {
+                
+                (Some(last_avg_gain), Some(last_avg_loss)) =>{
+                    self.calc_rsi(change,last_avg_gain, last_avg_loss, false);
+
+                    } 
+
+                _ => {
+                    return;
+                }}
             }
-        };
-
-        self.buff.push_before_close(change);
-
-        if self.buff.is_full(){
-           match (self.buff.last_avg_gain, self.buff.last_avg_loss) {
-            
-            (Some(last_avg_gain), Some(last_avg_loss)) =>{
-                self.calc_rsi(change,last_avg_gain, last_avg_loss, false);
-
-                } 
-
-            _ => {
-                return;
-            }}
-        }
+    }
 
     }
 
