@@ -33,19 +33,23 @@ impl EmaCross{
     }
 
     pub fn check_for_cross(&mut self) -> Option<bool> {
-        let uptrend = self.get_trend();
+        if !self.is_ready(){
+            None
+        }else{
+            let uptrend = self.get_trend().unwrap();
 
-        if let (Some(prev_uptrend)) = (self.prev_uptrend) {
-            
-            if uptrend != Some(prev_uptrend){
-                self.prev_uptrend = Some(uptrend);
-                Some(uptrend)
+            if let Some(prev_uptrend) = self.prev_uptrend {
+                
+                if uptrend != prev_uptrend{
+                    self.prev_uptrend = Some(uptrend);
+                    Some(uptrend)
+                }else{
+                    None
+                }
             }else{
+                self.prev_uptrend = Some(uptrend);
                 None
             }
-        }else{
-            self.prev_uptrend = Some(uptrend);
-            None
         }
     }
 
@@ -88,7 +92,7 @@ impl EmaCross{
     }
 
     pub fn get_trend(&self) -> Option<bool>{
-        Some(self.short.get_last() > self.long.get_last())
+        Some(self.short.get_last() >= self.long.get_last())
     }
 
     pub fn periods(&self) -> (usize,usize){
@@ -106,7 +110,7 @@ impl EmaCross{
     pub fn reset(&mut self){
         self.short.reset();
         self.long.reset();
-        self.uptrend = None;
+        self.prev_uptrend = None;
     }
 
 }
