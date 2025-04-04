@@ -1,4 +1,3 @@
-use crate::indicators::Price;
 use crate::indicators::Indicator;
 
 #[derive(Clone, Debug)]

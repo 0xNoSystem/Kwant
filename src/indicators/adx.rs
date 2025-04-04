@@ -171,6 +171,7 @@ impl AdxBuffer {
     }
 
     fn update_before_close(&mut self, high: f32, low: f32, tr: f32) {
+        self.dx = None;
         let length = self.di_length as f32;
 
         let provisional_tr = if let Some(smoothed_tr) = self.prev_tr {

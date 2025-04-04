@@ -20,6 +20,7 @@ struct RsiBuffer{
     sum_loss: f32,
     last_avg_gain: Option<f32>,
     last_avg_loss: Option<f32>,
+    in_candle: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -251,6 +252,7 @@ impl RsiBuffer{
             sum_loss: 0_f32,
             last_avg_gain: None,
             last_avg_loss: None,
+            in_candle: false,   
         }
     }
 
@@ -274,14 +276,18 @@ impl RsiBuffer{
         }
 
         self.changes_buffer.push_back(change);   
+        self.in_candle = true;
 
     }
     fn push_before_close(&mut self, change: f32){
 
         assert!(self.is_full(), "push_before_close() called before buffer is full");
-
-        let expired_change = self.changes_buffer.pop_back().unwrap();
-
+        let expired_change: f32;
+        if self.in_candle{
+            expired_change = self.changes_buffer.pop_back().unwrap();
+        }else{
+            expired_change = self.changes_buffer.pop_front().unwrap();
+        }
         if expired_change > 0.0{
             self.sum_gain -= expired_change;
         }else{
@@ -302,7 +308,7 @@ impl RsiBuffer{
 
     fn is_full(&self) -> bool{
 
-        self.changes_buffer.len() == self.changes_buffer.capacity()
+        self.changes_buffer.len() == self.changes_buffer.capacity() - 1
     }
 
     fn init_last_avg(&mut self){

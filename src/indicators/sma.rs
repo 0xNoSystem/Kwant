@@ -8,6 +8,7 @@ pub struct Sma{
     buff: VecDeque<f32>,
     sum: f32,
     value: Option<f32>,
+    in_candle: bool,
 }
 
 
@@ -22,6 +23,7 @@ impl Sma{
             buff: VecDeque::with_capacity(periods),
             sum: 0.0,
             value: None,
+            in_candle: false,
         }
     }
 }
@@ -42,18 +44,26 @@ impl Indicator for Sma{
         if self.is_ready(){
             self.value = Some(self.sum / self.periods as f32);
         }
+
+        self.in_candle = false;
     }
 
     fn update_before_close(&mut self, price: Price){
 
         let price = price.close;
         if self.is_ready(){
-            let last_price = self.buff.pop_back().unwrap();
+            let last_price: f32;
+            if !self.in_candle{
+                last_price = self.buff.pop_front().unwrap();
+            }else{
+                last_price = self.buff.pop_back().unwrap();
+            }
             self.sum -= last_price;
             self.buff.push_back(price);
             self.sum += price;
             
             self.value = Some(self.sum/ self.periods as f32);
+            self.in_candle = true;
         }
     }
 
@@ -96,6 +106,7 @@ impl Default for Sma{
             buff: VecDeque::with_capacity(9),
             sum: 0.0,
             value: None,
+            in_candle: false,
         }
     }
 }
