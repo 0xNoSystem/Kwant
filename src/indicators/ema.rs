@@ -15,7 +15,7 @@ pub struct Ema{
 pub struct EmaCross{
     pub short: Ema,
     pub long: Ema,
-    uptrend: Option<bool>,
+    prev_uptrend: Option<bool>,
 }
 
 
@@ -28,27 +28,32 @@ impl EmaCross{
         EmaCross{
             short: Ema::new(period_short.min(period_long)),
             long: Ema::new(period_short.max(period_long)),
-            uptrend: None,
+            prev_uptrend: None,
         }
     }
 
-    fn check_for_cross(&mut self) -> Option<bool> {
+    pub fn check_for_cross(&mut self) -> Option<bool> {
+        if !self.is_ready(){
+            None
+        }else{
+            let uptrend = self.get_trend().unwrap();
 
-        if let (Some(short_value), Some(long_value)) = (self.short.get_last(), self.long.get_last()) {
-            
-            let uptrend = short_value > long_value;
-            if self.uptrend != Some(uptrend){
-                self.uptrend = Some(uptrend);
-                Some(uptrend)
+            if let Some(prev_uptrend) = self.prev_uptrend {
+                
+                if uptrend != prev_uptrend{
+                    self.prev_uptrend = Some(uptrend);
+                    Some(uptrend)
+                }else{
+                    None
+                }
             }else{
+                self.prev_uptrend = Some(uptrend);
                 None
             }
-        }else{
-            None
         }
     }
 
-    pub fn update(&mut self,price: Price ,after_close: bool) -> Option<bool>{
+    pub fn update(&mut self,price: Price ,after_close: bool){
 
         if after_close{
             self.update_after_close(price);
@@ -56,7 +61,16 @@ impl EmaCross{
             self.update_before_close(price);
         }
 
+        if self.is_ready() && self.prev_uptrend.is_none(){
+            self.prev_uptrend = self.get_trend();
+        }
+    }
+
+    pub fn update_and_check_for_cross(&mut self,price: Price ,after_close: bool) -> Option<bool>{
+
+        self.update(price, after_close);
         self.check_for_cross()
+
     }
 
     fn update_after_close(&mut self, price: Price){
@@ -78,7 +92,11 @@ impl EmaCross{
     }
 
     pub fn get_trend(&self) -> Option<bool>{
-        self.uptrend
+        if self.is_ready(){
+            Some(self.short.get_last() >= self.long.get_last())
+        }else{
+            None
+        }
     }
 
     pub fn periods(&self) -> (usize,usize){
@@ -96,13 +114,18 @@ impl EmaCross{
     pub fn reset(&mut self){
         self.short.reset();
         self.long.reset();
-        self.uptrend = None;
+        self.prev_uptrend = None;
     }
 
 }
 
 
+impl Default for EmaCross{
+    fn default() -> Self{
 
+        EmaCross::new(9, 21)
+    }
+}
 
 
 
@@ -209,15 +232,3 @@ impl Default for Ema{
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-

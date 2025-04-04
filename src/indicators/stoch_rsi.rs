@@ -178,6 +178,16 @@ impl StochRsi {
     pub fn is_ready(&self) -> bool {
         self.k_value.is_some() && self.d_value.is_some()
     }
+    
+
+    pub fn get_diff(&self) -> Option<f32>{
+        if let (Some(k), Some(d)) = (self.k_value, self.d_value){
+            return Some(k - d);
+        };
+        
+        None
+    }
+
 
     pub fn reset(&mut self) {
         self.buffer.clear();
