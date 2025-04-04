@@ -38,7 +38,7 @@ impl StochRsi {
             k_value: None,
             d_buffer: VecDeque::with_capacity(d_smoothing),
             d_value: None,
-            in_candle: false,
+            in_candle: true,
         }
     }
 
@@ -187,7 +187,7 @@ impl StochRsi {
         self.k_value = None;
         self.d_buffer.clear();
         self.d_value = None;
-        self.in_candle = false;
+        self.in_candle = true;
     }
 
     fn recompute_min_max(&mut self) {

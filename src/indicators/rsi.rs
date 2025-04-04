@@ -252,7 +252,7 @@ impl RsiBuffer{
             sum_loss: 0_f32,
             last_avg_gain: None,
             last_avg_loss: None,
-            in_candle: false,   
+            in_candle: true,   
         }
     }
 

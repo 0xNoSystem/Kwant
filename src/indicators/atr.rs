@@ -1,5 +1,5 @@
 use crate::indicators::Indicator;
-
+use crate::indicators::Price;
 #[derive(Clone, Debug)]
 pub struct Atr {
     periods: usize,

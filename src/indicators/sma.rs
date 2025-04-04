@@ -23,7 +23,7 @@ impl Sma{
             buff: VecDeque::with_capacity(periods),
             sum: 0.0,
             value: None,
-            in_candle: false,
+            in_candle: true,
         }
     }
 }
@@ -106,7 +106,7 @@ impl Default for Sma{
             buff: VecDeque::with_capacity(9),
             sum: 0.0,
             value: None,
-            in_candle: false,
+            in_candle: true,
         }
     }
 }
