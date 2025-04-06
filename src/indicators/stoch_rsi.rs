@@ -16,7 +16,6 @@ pub struct StochRsi {
     k_value: Option<f32>,
     d_buffer: VecDeque<f32>,
     d_value: Option<f32>,
-    in_candle: bool,
 }
 
 impl StochRsi {
@@ -38,7 +37,6 @@ impl StochRsi {
             k_value: None,
             d_buffer: VecDeque::with_capacity(d_smoothing),
             d_value: None,
-            in_candle: true,
         }
     }
 
@@ -61,39 +59,42 @@ impl StochRsi {
         if rsi > self.current_max {
             self.current_max = rsi;
         }
-        self.in_candle = false;
+
         self.compute_stoch_rsi(rsi, true);
-        
     }
 
     pub fn update_before_close(&mut self, rsi: f32) {
-        if let Some(&old_rsi) = self.buffer.back() {
-            if is_same(old_rsi, rsi) {
-                return;
-            }
-        }
-        if self.buffer.len() == self.length {
-            let expired: f32;
-            if !self.in_candle{
-                expired = self.buffer.pop_front().unwrap();
-            }else{
-                expired = self.buffer.pop_back().unwrap();
+        if self.is_ready(){
+            if let Some(&old_rsi) = self.buffer.back() {
+                if is_same(old_rsi, rsi) {
+                    return;
                 }
-            if is_same(expired, self.current_min) || is_same(expired, self.current_max) {
-                self.recompute_min_max();
             }
-        }
-        self.buffer.push_back(rsi);
+            if self.buffer.len() == self.length {
+                let expired = self.buffer.pop_back().unwrap();
+                if is_same(expired, self.current_min) || is_same(expired, self.current_max) {
+                    self.recompute_min_max();
+                }
+            }
+            self.buffer.push_back(rsi);
 
-        if rsi < self.current_min {
-            self.current_min = rsi;
-        }
-        if rsi > self.current_max {
-            self.current_max = rsi;
+            if rsi < self.current_min {
+                self.current_min = rsi;
+            }
+            if rsi > self.current_max {
+                self.current_max = rsi;
+            }
+            self.compute_stoch_rsi(rsi, false);
         }
 
-        self.compute_stoch_rsi(rsi,false);
-        self.in_candle = true;
+    }
+
+    pub fn get_diff(&self) -> Option<f32>{
+        if let (Some(k), Some(d)) = (self.k_value, self.d_value){
+            return Some(k - d);
+        };
+        
+        None
     }
 
     fn compute_stoch_rsi(&mut self, latest_rsi: f32, after: bool) {
@@ -115,11 +116,7 @@ impl StochRsi {
                 self.k_smoothing_buffer.pop_front();
                 self.k_smoothing_buffer.push_back(raw_k);
             }else{
-                if !self.in_candle{
-                    self.k_smoothing_buffer.pop_back();
-                }else{
-                    self.k_smoothing_buffer.pop_front();
-                }
+                self.k_smoothing_buffer.pop_back();
                 self.k_smoothing_buffer.push_back(raw_k);
             }
         }else{
@@ -147,17 +144,14 @@ impl StochRsi {
                 self.d_buffer.pop_front();
                 self.d_buffer.push_back(k_val);
             }else{
-                if !self.in_candle{
-                    self.d_buffer.pop_back();
-                }else{
-                    self.d_buffer.pop_front();
-                }
+                self.d_buffer.pop_back();
                 self.d_buffer.push_back(k_val);
             }
-            }else if after{  
+        }else{  
+            if after{
                 self.d_buffer.push_back(k_val);
             }
-        
+        }
         // If the buffer is not full, we don't compute the average
         if self.d_buffer.len() == d_len {
             let sum_d: f32 = self.d_buffer.iter().sum();
@@ -178,16 +172,6 @@ impl StochRsi {
     pub fn is_ready(&self) -> bool {
         self.k_value.is_some() && self.d_value.is_some()
     }
-    
-
-    pub fn get_diff(&self) -> Option<f32>{
-        if let (Some(k), Some(d)) = (self.k_value, self.d_value){
-            return Some(k - d);
-        };
-        
-        None
-    }
-
 
     pub fn reset(&mut self) {
         self.buffer.clear();
@@ -197,7 +181,6 @@ impl StochRsi {
         self.k_value = None;
         self.d_buffer.clear();
         self.d_value = None;
-        self.in_candle = true;
     }
 
     fn recompute_min_max(&mut self) {
@@ -213,5 +196,3 @@ impl StochRsi {
         }
     }
 }
-
-
