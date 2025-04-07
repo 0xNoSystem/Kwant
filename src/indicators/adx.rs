@@ -220,6 +220,7 @@ impl AdxBuffer {
         self.prev_dm_pos = None;
         self.prev_dm_neg = None;
         self.prev_tr = None;
+        self.dx_buffer.clear();
         self.dx = None;
     }
 }
