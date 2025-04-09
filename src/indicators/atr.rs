@@ -85,15 +85,14 @@ impl Indicator for Atr{
     }
 
     
-    fn load(&mut self, price_data: &Vec<Price>){
-
-        if price_data.len() > 1 {
-            
-            for p in price_data{
-                self.update_after_close(*p);
-            }
-        };
-       }
+fn load(&mut self, price_data: &Vec<Price>) {
+    if price_data.len() < 2 {
+        return;
+        }
+    for p in &price_data[..price_data.len() - 1] {
+        self.update_after_close(*p);
+        }
+    }     
 
     fn reset(&mut self) {
     self.value = None;
