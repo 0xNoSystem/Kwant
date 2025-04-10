@@ -96,11 +96,7 @@ impl Indicator for Adx {
 }
 
     fn load(&mut self, price_data: &Vec<Price>) {
-   
-        if price_data.len() < 2 {
-            return; // not enough data to initialize
-        }
-        for p in &price_data[..price_data.len() - 1] {
+        for p in price_data {
             self.update_after_close(*p);
         }
     }
