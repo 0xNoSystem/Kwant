@@ -27,7 +27,7 @@ This library powers signal generation for the [`hyperliquid_rust_bot`](https://g
 
 ```toml
 # Add to your Cargo.toml
-depkwant = { git = "https://github.com/0xNoSystem/Kwant" }
+kwant = { git = "https://github.com/0xNoSystem/Kwant" }
 ```
 
 ---
