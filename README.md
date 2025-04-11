@@ -30,35 +30,7 @@ This library powers signal generation for the [`hyperliquid_rust_bot`](https://g
 kwant = { git = "https://github.com/0xNoSystem/Kwant" }
 
 
-## 🚀 Usage
 
-### 🔹 Exponential Moving Average (EMA)
-
-```rust
-use kwant::indicators::{Price, Indicator, Ema};
-
-fn main() {
-    let mut ema = Ema::new(20); // 20-period EMA
-
-    let price = Price {
-        open: 100.0,
-        high: 105.0,
-        low: 99.0,
-        close: 102.0,
-    };
-
-    // Optional: update mid-candle (e.g. during live streaming)
-    ema.update_before_close(price);
-
-    // Finalize candle at close
-    ema.update_after_close(price);
-
-    if let Some(value) = ema.get_last() {
-        println!("Current EMA: {:.2}", value);
-    }
-
-    if let Some(slope) = ema.get_slope() {
-        println!("Current EMA Slope: {:.2}%", slope);
     }
 }
 
