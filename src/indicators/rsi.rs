@@ -281,7 +281,7 @@ impl RsiBuffer{
     }
     fn push_before_close(&mut self, change: f32){
 
-        assert!(self.is_full(), "push_before_close() called before buffer is full");
+        if !self.is_full(){return;}
         let expired_change: f32;
         if self.in_candle{
             expired_change = self.changes_buffer.pop_back().unwrap();
