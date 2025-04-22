@@ -16,6 +16,7 @@ pub struct StochRsi {
     k_value: Option<f32>,
     d_buffer: VecDeque<f32>,
     d_value: Option<f32>,
+    in_candle: bool,
 }
 
 impl StochRsi {
@@ -37,6 +38,7 @@ impl StochRsi {
             k_value: None,
             d_buffer: VecDeque::with_capacity(d_smoothing),
             d_value: None,
+            in_candle: true,
         }
     }
 
@@ -61,17 +63,24 @@ impl StochRsi {
         }
 
         self.compute_stoch_rsi(rsi, true);
+        self.in_candle = true;
     }
 
     pub fn update_before_close(&mut self, rsi: f32) {
         if self.is_ready(){
             if let Some(&old_rsi) = self.buffer.back() {
-                if is_same(old_rsi, rsi) {
+                if is_same(old_rsi, rsi) && !self.in_candle {
                     return;
                 }
             }
             if self.buffer.len() == self.length {
-                let expired = self.buffer.pop_back().unwrap();
+                let expired;
+                if !self.in_candle{
+                    expired = self.buffer.pop_back().unwrap();
+                }else{
+                    expired = self.buffer.pop_front().unwrap();
+                    self.in_candle = false;
+                }
                 if is_same(expired, self.current_min) || is_same(expired, self.current_max) {
                     self.recompute_min_max();
                 }

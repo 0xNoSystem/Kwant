@@ -115,9 +115,7 @@ impl Rsi{
                 sma.push(rsi);
             }
         }else {
-            if self.stoch.is_ready() {
-                self.stoch.update_before_close(rsi);
-            };
+            self.stoch.update_before_close(rsi);
         };
 
         self.value = Some(rsi);
