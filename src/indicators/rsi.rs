@@ -283,10 +283,11 @@ impl RsiBuffer{
 
         if !self.is_full(){return;}
         let expired_change: f32;
-        if self.in_candle{
+        if !self.in_candle{
             expired_change = self.changes_buffer.pop_back().unwrap();
         }else{
             expired_change = self.changes_buffer.pop_front().unwrap();
+            self.in_candle = false;
         }
         if expired_change > 0.0{
             self.sum_gain -= expired_change;
