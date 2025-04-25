@@ -83,24 +83,18 @@ impl Indicator for Atr{
     fn get_last(&self) -> Option<f32>{
         self.value
     }
-
-    
-    fn load(&mut self, price_data: &Vec<Price>){
-
-        if price_data.len() > 1 {
-            
-            for p in price_data{
-                self.update_after_close(*p);
-            }
-        };
-       }
+    fn load<'a,I: IntoIterator<Item=&'a Price>>(&mut self, price_data: I){
+        for p in price_data{
+            self.update_after_close(*p);
+        }
+    }
 
     fn reset(&mut self) {
-    self.value = None;
-    self.prev_close = None;
-    self.prev_value = None;
-    self.warmup_trs.clear();
-        }
+        self.value = None;
+        self.prev_close = None;
+        self.prev_value = None;
+        self.warmup_trs.clear();
+    }
 
     fn is_ready(&self) -> bool {
         self.value.is_some()

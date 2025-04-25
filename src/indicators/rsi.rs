@@ -214,7 +214,7 @@ impl Indicator for Rsi{
         self.buff.is_full() && self.value.is_some() 
     }
 
-    fn load(&mut self, price_data: &Vec<Price>){
+    fn load<'a,I: IntoIterator<Item=&'a Price>>(&mut self, price_data: I){
 
         for p in price_data{
             self.update_after_close(*p);

@@ -95,12 +95,12 @@ impl Indicator for Adx {
         }
 }
 
-    fn load(&mut self, price_data: &Vec<Price>) {
-        for p in price_data {
+    fn load<'a,I: IntoIterator<Item=&'a Price>>(&mut self, price_data: I){
+
+        for p in price_data{
             self.update_after_close(*p);
         }
     }
-
     fn get_last(&self) -> Option<f32> {
         self.value
     }

@@ -89,8 +89,7 @@ impl Indicator for Sma{
         self.value = None;
     }
 
-    fn load(&mut self, price_data: &Vec<Price>){
-
+    fn load<'a,I: IntoIterator<Item=&'a Price>>(&mut self, price_data: I){
         for p in price_data{
             self.update_after_close(*p);
         }

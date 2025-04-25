@@ -104,7 +104,7 @@ impl EmaCross{
         (self.short.period(), self.long.period())
     }
 
-    pub fn load(&mut self, price_data: &Vec<Price>){
+    pub fn load<'a,I: IntoIterator<Item=&'a Price>>(&mut self, price_data: I){
 
         for p in price_data{
             self.update(*p, true);
@@ -201,7 +201,7 @@ impl Indicator for Ema{
         self.value.is_some()
     }
 
-    fn load(&mut self, price_data: &Vec<Price>){
+    fn load<'a,I: IntoIterator<Item=&'a Price>>(&mut self, price_data: I){
 
         for p in price_data{
             self.update_after_close(*p);
