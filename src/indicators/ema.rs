@@ -73,6 +73,16 @@ impl EmaCross{
 
     }
 
+    pub fn get_trend(&self) -> Option<bool>{
+        if self.is_ready(){
+            Some(self.short.get_last() >= self.long.get_last())
+        }else{
+            None
+        }
+    }
+ }
+
+impl Indicator for EmaCross{
     fn update_after_close(&mut self, price: Price){
 
         self.short.update_after_close(price);
@@ -86,36 +96,34 @@ impl EmaCross{
         self.long.update_before_close(price);
     }
 
-    pub fn is_ready(&self) -> bool{
+    fn is_ready(&self) -> bool{
 
         self.short.is_ready() && self.long.is_ready()
     }
 
-    pub fn get_trend(&self) -> Option<bool>{
-        if self.is_ready(){
-            Some(self.short.get_last() >= self.long.get_last())
-        }else{
-            None
-        }
+
+    fn period(&self) -> u32{
+        //return long only
+        self.long.period()
     }
 
-    pub fn periods(&self) -> (u32,u32){
-
-        (self.short.period(), self.long.period())
-    }
-
-    pub fn load<'a,I: IntoIterator<Item=&'a Price>>(&mut self, price_data: I){
+    fn load<'a,I: IntoIterator<Item=&'a Price>>(&mut self, price_data: I){
 
         for p in price_data{
             self.update(*p, true);
         }
     }
 
-    pub fn reset(&mut self){
+    fn reset(&mut self){
         self.short.reset();
         self.long.reset();
         self.prev_uptrend = None;
     }
+
+    fn get_last(&self) -> Option<f32>{
+        //return the long Ema value
+        self.long.get_last()
+}
 
 }
 
