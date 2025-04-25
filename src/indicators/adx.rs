@@ -95,7 +95,8 @@ impl Indicator for Adx {
         }
 }
 
-    fn load<'a,I: IntoIterator<Item=&'a Price>>(&mut self, price_data: I){
+  
+    fn load(&mut self, price_data: &[Price]){
 
         for p in price_data{
             self.update_after_close(*p);

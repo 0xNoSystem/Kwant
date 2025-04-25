@@ -214,22 +214,20 @@ impl Indicator for Rsi{
         self.buff.is_full() && self.value.is_some() 
     }
 
-    fn load<'a,I: IntoIterator<Item=&'a Price>>(&mut self, price_data: I){
-
+    fn load(&mut self, price_data: &[Price]){
         for p in price_data{
             self.update_after_close(*p);
         }
-
     }
 
     fn reset(&mut self) {
-    self.buff = RsiBuffer::new(self.periods - 1);
-    self.last_price = None;
-    self.value = None;
-    if let Some(sma) = &mut self.sma {
-        *sma = SmaOnRsi::new(sma.length as u32);
-    }
-    self.stoch.reset();
+        self.buff = RsiBuffer::new(self.periods - 1);
+        self.last_price = None;
+        self.value = None;
+        if let Some(sma) = &mut self.sma { 
+            *sma = SmaOnRsi::new(sma.length as u32);
+        }
+        self.stoch.reset();
 }
 
     fn period(&self) -> u32{

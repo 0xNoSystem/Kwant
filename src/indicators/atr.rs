@@ -83,12 +83,12 @@ impl Indicator for Atr{
     fn get_last(&self) -> Option<f32>{
         self.value
     }
-    fn load<'a,I: IntoIterator<Item=&'a Price>>(&mut self, price_data: I){
+    fn load(&mut self, price_data: &[Price]){
         for p in price_data{
             self.update_after_close(*p);
         }
     }
-
+ 
     fn reset(&mut self) {
         self.value = None;
         self.prev_close = None;
