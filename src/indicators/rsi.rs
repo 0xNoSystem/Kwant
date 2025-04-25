@@ -5,7 +5,7 @@ use crate::indicators::StochRsi;
 
 #[derive(Clone, Debug)]
 pub struct Rsi{
-    periods: usize,
+    periods: u32,
     buff: RsiBuffer,
     last_price: Option<f32>,
     value: Option<f32>,
@@ -26,19 +26,19 @@ struct RsiBuffer{
 #[derive(Clone, Debug)]
 pub struct SmaOnRsi{
     buff: VecDeque<f32>,
-    length: usize, 
+    length: u32, 
     current_sum: f32,
 }
 
 
 impl SmaOnRsi{
-    fn new(smoothing_length: usize) -> Self{
+    fn new(smoothing_length: u32) -> Self{
        
         assert!(smoothing_length > 1, "length field must be a positive integer > 1, ({})", smoothing_length);
 
 
         SmaOnRsi{
-            buff: VecDeque::with_capacity(smoothing_length), 
+            buff: VecDeque::with_capacity(smoothing_length as usize), 
             length: smoothing_length,
             current_sum: 0.0,
         }
@@ -68,7 +68,7 @@ impl SmaOnRsi{
 
     fn is_full(&self) -> bool{
 
-        self.buff.len() == self.length
+        self.buff.len() == self.length as usize
     }
 }
 
@@ -77,7 +77,7 @@ impl SmaOnRsi{
 
 impl Rsi{
 
-    pub fn new(periods: usize,stoch_length: usize,smoothing_length: Option<usize>) -> Self{
+    pub fn new(periods: u32,stoch_length: u32,smoothing_length: Option<u32>) -> Self{
 
         assert!(periods > 1, "Periods field must be a positive integer > 1, ({})", periods);
         
@@ -227,12 +227,12 @@ impl Indicator for Rsi{
     self.last_price = None;
     self.value = None;
     if let Some(sma) = &mut self.sma {
-        *sma = SmaOnRsi::new(sma.length);
+        *sma = SmaOnRsi::new(sma.length as u32);
     }
     self.stoch.reset();
 }
 
-    fn period(&self) -> usize{
+    fn period(&self) -> u32{
         self.periods
     }
 }
@@ -243,9 +243,9 @@ impl Indicator for Rsi{
 
 impl RsiBuffer{
 
-    fn new(capacity: usize) -> Self{
+    fn new(capacity: u32) -> Self{
         RsiBuffer{
-            changes_buffer: VecDeque::with_capacity(capacity), 
+            changes_buffer: VecDeque::with_capacity(capacity as usize), 
             sum_gain: 0_f32,
             sum_loss: 0_f32,
             last_avg_gain: None,

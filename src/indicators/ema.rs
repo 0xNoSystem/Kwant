@@ -3,7 +3,7 @@ use crate::indicators::{Price, Indicator, Sma};
 
 #[derive(Clone, Debug)]
 pub struct Ema{
-    periods: usize,
+    periods: u32,
     alpha: f32,
     buff: Sma,
     prev_value: Option<f32>,
@@ -22,7 +22,7 @@ pub struct EmaCross{
 
 impl EmaCross{
 
-    pub fn new(period_short: usize, period_long: usize) -> Self{
+    pub fn new(period_short: u32, period_long: u32) -> Self{
         
         
         EmaCross{
@@ -99,7 +99,7 @@ impl EmaCross{
         }
     }
 
-    pub fn periods(&self) -> (usize,usize){
+    pub fn periods(&self) -> (u32,u32){
 
         (self.short.period(), self.long.period())
     }
@@ -132,14 +132,14 @@ impl Default for EmaCross{
 
 impl Ema{
 
-    pub fn new(periods: usize) -> Self{
+    pub fn new(periods: u32) -> Self{
 
         assert!(periods > 1, "Ema  periods field must a positive integer n > 1, {} ", periods);
 
         Ema{
             periods,
             buff: Sma::new(periods),
-            alpha: 2.0/(periods as f32 + 1.0),
+           alpha: 2.0/(periods as f32 + 1.0),
             prev_value: None,
             value: None,
             slope: None,
@@ -214,7 +214,7 @@ impl Indicator for Ema{
         self.slope = None;
     }
 
-    fn period(&self) -> usize{
+    fn period(&self) -> u32{
         self.periods
     }
 }

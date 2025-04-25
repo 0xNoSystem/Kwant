@@ -4,7 +4,7 @@ use crate::indicators::Price;
 
 #[derive(Clone, Debug)]
 pub struct Atr {
-    periods: usize,
+    periods: u32,
     value: Option<f32>,
     prev_value: Option<f32>,
     prev_close: Option<f32>,
@@ -14,13 +14,13 @@ pub struct Atr {
 
 impl Atr{
 
-    pub fn new(periods: usize) -> Self{
+    pub fn new(periods: u32) -> Self{
 
         assert!(periods > 0, "Atr periods must be a periods > 0, ({})", periods);
         Atr{
             periods,
             prev_close: None,
-            warmup_trs: Vec::with_capacity(periods),
+            warmup_trs: Vec::with_capacity(periods as usize),
             prev_value: None,
             value: None,
         }
@@ -38,7 +38,7 @@ impl Atr{
 
 impl Indicator for Atr{
 
-    fn period(&self) -> usize{
+    fn period(&self) -> u32{
         self.periods
     }
 
@@ -55,7 +55,7 @@ impl Indicator for Atr{
 
     if self.value.is_none() {
         self.warmup_trs.push(tr);
-        if self.warmup_trs.len() == self.periods {
+        if self.warmup_trs.len() == self.periods as usize {
             let sum: f32 = self.warmup_trs.iter().sum();
             let initial_atr = sum / self.periods as f32;
             self.value = Some(initial_atr);

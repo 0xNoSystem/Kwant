@@ -3,7 +3,7 @@ use crate::indicators::{Price, Indicator};
 
 #[derive(Clone, Debug)]
 pub struct Adx {
-    periods: usize,
+    periods: u32,
     buff: AdxBuffer,
     prev_close: Option<f32>,
     prev_value: Option<f32>,
@@ -12,7 +12,7 @@ pub struct Adx {
 
 #[derive(Clone, Debug)]
 struct AdxBuffer {
-    di_length: usize,
+    di_length: u32,
     prev_high: Option<f32>,
     prev_low: Option<f32>,
     prev_dm_pos: Option<f32>,
@@ -23,7 +23,7 @@ struct AdxBuffer {
 }
 
 impl Adx {
-    pub fn new(periods: usize, di_length: usize) -> Self {
+    pub fn new(periods: u32, di_length: u32) -> Self {
         assert!(periods > 0, "Adx periods must be > 0, got {}", periods);
         Adx {
             periods,
@@ -40,7 +40,7 @@ impl Adx {
     if self.prev_value.is_none(){
         if after{
             self.buff.dx_buffer.push_back(dx);
-            if self.buff.dx_buffer.len() == length {
+            if self.buff.dx_buffer.len() == length as usize{
                 let sum: f32 = self.buff.dx_buffer.iter().sum();
                 let initial_adx = sum / length as f32;
                 self.prev_value = Some(initial_adx);
@@ -109,7 +109,7 @@ impl Indicator for Adx {
         self.value.is_some()
     }
 
-    fn period(&self) -> usize {
+    fn period(&self) -> u32{
         self.periods
     }
 
@@ -122,7 +122,7 @@ impl Indicator for Adx {
 }
 
 impl AdxBuffer {
-    fn new(di_length: usize) -> Self {
+    fn new(di_length: u32) -> Self {
         assert!(di_length > 0, "Adx di_length must be > 0, got {}", di_length);
         AdxBuffer {
             di_length,
@@ -131,7 +131,7 @@ impl AdxBuffer {
             prev_dm_pos: None,
             prev_dm_neg: None,
             prev_tr: None,
-            dx_buffer: VecDeque::with_capacity(di_length),
+            dx_buffer: VecDeque::with_capacity(di_length as usize),
             dx: None,
         }
     }

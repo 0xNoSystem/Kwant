@@ -4,7 +4,7 @@ use crate::indicators::{Price, Indicator};
 
 #[derive(Clone, Debug)]
 pub struct Sma{
-    periods: usize,
+    periods: u32,
     buff: VecDeque<f32>,
     sum: f32,
     value: Option<f32>,
@@ -15,12 +15,12 @@ pub struct Sma{
 
 impl Sma{
 
-    pub fn new(periods: usize) -> Self{
+    pub fn new(periods: u32) -> Self{
 
         assert!(periods > 1, "Sma  periods field must a positive integer n > 1, {} ", periods);
         Sma{
             periods,
-            buff: VecDeque::with_capacity(periods),
+            buff: VecDeque::with_capacity(periods as usize),
             sum: 0.0,
             value: None,
             in_candle: true,
@@ -77,7 +77,7 @@ impl Indicator for Sma{
         self.buff.len() == self.buff.capacity()
     }
 
-    fn period(&self) -> usize{
+    fn period(&self) -> u32{
         
         self.periods
     }

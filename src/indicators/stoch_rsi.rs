@@ -7,7 +7,7 @@ fn is_same(a: f32, b: f32) -> bool {
 #[derive(Clone, Debug)]
 pub struct StochRsi {
     buffer: VecDeque<f32>,
-    length: usize,
+    length: u32,
     current_min: f32,
     current_max: f32,
 
@@ -23,31 +23,31 @@ impl StochRsi {
     /// `length` = how many RSI values to consider for raw stoch
     /// `k_smoothing` = smoothing period for %K
     /// `d_smoothing` = smoothing period for %D signal
-    pub fn new(length: usize, k_smoothing: usize, d_smoothing: usize) -> Self {
+    pub fn new(length: u32, k_smoothing: u32, d_smoothing: u32) -> Self {
         assert!(length > 1, "Stoch length must be > 1");
         assert!(k_smoothing > 0, "k_smoothing must be > 0");
         assert!(d_smoothing > 0, "d_smoothing must be > 0");
 
         Self {
-            buffer: VecDeque::with_capacity(length),
+            buffer: VecDeque::with_capacity(length as usize),
             length,
             current_min: f32::INFINITY,
             current_max: f32::NEG_INFINITY,
 
-            k_smoothing_buffer: VecDeque::with_capacity(k_smoothing),
+            k_smoothing_buffer: VecDeque::with_capacity(k_smoothing as usize),
             k_value: None,
-            d_buffer: VecDeque::with_capacity(d_smoothing),
+            d_buffer: VecDeque::with_capacity(d_smoothing as usize),
             d_value: None,
             in_candle: true,
         }
     }
 
-    pub fn periods(&self) -> usize {
+    pub fn periods(&self) -> u32{
         self.length
     }
 
     pub fn update_after_close(&mut self, rsi: f32) {
-        if self.buffer.len() == self.length {
+        if self.buffer.len() == self.length as usize{
             let expired = self.buffer.pop_front().unwrap();
             if is_same(expired, self.current_min) || is_same(expired, self.current_max) {
                 self.recompute_min_max();
@@ -73,7 +73,7 @@ impl StochRsi {
                     return;
                 }
             }
-            if self.buffer.len() == self.length {
+            if self.buffer.len() == self.length as usize {
                 let expired;
                 if !self.in_candle{
                     expired = self.buffer.pop_back().unwrap();
@@ -107,7 +107,7 @@ impl StochRsi {
     }
 
     fn compute_stoch_rsi(&mut self, latest_rsi: f32, after: bool) {
-        if self.buffer.len() == self.length && self.current_max != self.current_min {
+        if self.buffer.len() == self.length as usize && self.current_max != self.current_min {
             let raw_k = (latest_rsi - self.current_min) / (self.current_max - self.current_min);
             self.push_k_smoothing(raw_k, after);
         } else {
