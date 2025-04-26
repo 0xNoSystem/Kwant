@@ -1,5 +1,4 @@
-use crate::indicators::Indicator;
-use crate::indicators::Price;
+use crate::indicators::{Value,Price, Indicator};
 
 
 #[derive(Clone, Debug)]
@@ -26,11 +25,11 @@ impl Atr{
         }
     }
 
-    pub fn normalized(&self, price: f32) -> Option<f32> {
+    pub fn normalized(&self, price: f32) -> Option<Value> {
     if price.abs() < f32::EPSILON {
         return None;
     }
-    self.value.map(|value| (value / price) * 100.0)
+    self.value.map(|value| Value::AtrValue((value / price) * 100.0))
     }
 }
 
@@ -80,8 +79,12 @@ impl Indicator for Atr{
     }
 }
 
-    fn get_last(&self) -> Option<f32>{
-        self.value
+    fn get_last(&self) -> Option<Value>{
+        if let Some(price) = self.prev_close{
+            return self.normalized(price);
+        }
+
+        None
     }
     fn load(&mut self, price_data: &[Price]){
         for p in price_data{

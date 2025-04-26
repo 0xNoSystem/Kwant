@@ -7,12 +7,12 @@ pub mod adx;
 pub mod indicator;
 pub mod types;
 
-pub use rsi::Rsi;
+pub use rsi::{Rsi, SmaRsi};
 pub use ema::Ema;
 pub use ema::EmaCross;
 pub use sma::Sma;
-pub use stoch_rsi::StochRsi;
+pub use stoch_rsi::StochasticRsi;
 pub use atr::Atr;
 pub use adx::Adx;
 pub use types::Price;
-pub use indicator::Indicator;
+pub use indicator::{Indicator, Value};

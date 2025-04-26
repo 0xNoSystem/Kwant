@@ -1,11 +1,77 @@
 use std::collections::VecDeque;
-
+use crate::indicators::{Value,Price, Indicator};
+use crate::indicators::Rsi;
 fn is_same(a: f32, b: f32) -> bool {
     (a - b).abs() < f32::EPSILON
 }
 
+
+
 #[derive(Clone, Debug)]
-pub struct StochRsi {
+pub struct StochasticRsi{
+    periods: u32,
+    rsi: Rsi,
+}
+
+
+impl StochasticRsi{
+
+    pub fn new(periods: u32, k_smoothing: Option<u32>, d_smoothing: Option<u32>) -> Self{
+        
+        StochasticRsi{
+            periods,
+            rsi: Rsi::new(periods,periods, k_smoothing, d_smoothing, None),
+        }
+    }
+}
+
+impl Indicator for StochasticRsi{
+
+    fn update_before_close(&mut self, price: Price){
+        self.rsi.update_before_close(price);
+    }
+    fn update_after_close(&mut self, price: Price){
+        self.rsi.update_after_close(price);
+    }
+
+    fn is_ready(&self) -> bool{
+       self.rsi.stoch_is_ready() 
+    }
+
+    fn get_last(&self) -> Option<Value>{
+        if let (Some(k), Some(d)) = (self.rsi.get_stoch_rsi(), self.rsi.get_stoch_signal()){
+            return Some(Value::StochRsiValue{k, d});
+        }
+        None
+    }
+
+    fn reset(&mut self){
+        self.rsi.reset();
+    }
+
+    fn load(&mut self, price_data: &[Price]){
+        self.rsi.load(price_data);
+    }
+
+    fn period(&self) -> u32{
+        self.periods
+    }
+}
+
+impl Default for StochasticRsi{
+    fn default() -> Self{
+
+        Self{
+            periods: 14,
+            rsi: Rsi::new(14, 14, Some(3), Some(3), None),
+        }
+    }
+}
+
+
+
+#[derive(Clone, Debug)]
+pub struct StochBuffer {
     buffer: VecDeque<f32>,
     length: u32,
     current_min: f32,
@@ -19,7 +85,7 @@ pub struct StochRsi {
     in_candle: bool,
 }
 
-impl StochRsi {
+impl StochBuffer {
     /// `length` = how many RSI values to consider for raw stoch
     /// `k_smoothing` = smoothing period for %K
     /// `d_smoothing` = smoothing period for %D signal

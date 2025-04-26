@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use crate::indicators::{Price, Indicator};
+use crate::indicators::{Value,Price, Indicator};
 
 #[derive(Clone, Debug)]
 pub struct Adx {
@@ -102,8 +102,11 @@ impl Indicator for Adx {
             self.update_after_close(*p);
         }
     }
-    fn get_last(&self) -> Option<f32> {
-        self.value
+    fn get_last(&self) -> Option<Value> {
+        if let Some(val) = self.value{
+            return Some(Value::AdxValue(val));
+        }
+        None
     }
 
     fn is_ready(&self) -> bool {

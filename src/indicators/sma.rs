@@ -1,5 +1,5 @@
 use  std::collections::VecDeque;
-use crate::indicators::{Price, Indicator};
+use crate::indicators::{Price,Value, Indicator};
 
 
 #[derive(Clone, Debug)]
@@ -7,7 +7,7 @@ pub struct Sma{
     periods: u32,
     buff: VecDeque<f32>,
     sum: f32,
-    value: Option<f32>,
+    pub value: Option<f32>,
     in_candle: bool,
 }
 
@@ -67,9 +67,11 @@ impl Indicator for Sma{
         }
     }
 
-    fn get_last(&self) -> Option<f32>{
-
-        self.value
+    fn get_last(&self) -> Option<Value>{
+        if let Some(val) = self.value{
+            return Some(Value::SmaValue(val));
+        }
+        None
     }
 
     fn is_ready(&self) -> bool{

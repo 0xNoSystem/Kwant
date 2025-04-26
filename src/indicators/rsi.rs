@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use crate::indicators::Price;
-use crate::indicators::Indicator;
-use crate::indicators::StochRsi;
+use crate::indicators::{Value,Indicator};
+use crate::indicators::stoch_rsi::StochBuffer;
 
 #[derive(Clone, Debug)]
 pub struct Rsi{
@@ -10,7 +10,7 @@ pub struct Rsi{
     last_price: Option<f32>,
     value: Option<f32>,
     sma: Option<SmaOnRsi>,
-    stoch: StochRsi,
+    stoch: StochBuffer,
 }
 
 #[derive(Clone, Debug)]
@@ -24,7 +24,7 @@ struct RsiBuffer{
 }
 
 #[derive(Clone, Debug)]
-pub struct SmaOnRsi{
+struct SmaOnRsi{
     buff: VecDeque<f32>,
     length: u32, 
     current_sum: f32,
@@ -77,7 +77,7 @@ impl SmaOnRsi{
 
 impl Rsi{
 
-    pub fn new(periods: u32,stoch_length: u32,smoothing_length: Option<u32>) -> Self{
+    pub fn new(periods: u32,stoch_length: u32,k_smoothing: Option<u32>,d_smoothing: Option<u32>, smoothing_length: Option<u32>) -> Self{
 
         assert!(periods > 1, "Periods field must be a positive integer > 1, ({})", periods);
         
@@ -89,7 +89,7 @@ impl Rsi{
             last_price: None,
             value: None,
             sma: sma,
-            stoch: StochRsi::new(stoch_length, 3, 3),
+            stoch: StochBuffer::new(stoch_length, k_smoothing.unwrap_or(3), d_smoothing.unwrap_or(3)),
         }
     }
 
@@ -129,6 +129,17 @@ impl Rsi{
         }else{
             None
         }
+    }
+
+    pub fn sma_is_ready(&self) -> bool{
+        if let Some(ref sma) = self.sma{
+            return sma.is_full();
+        }
+        false
+    }
+
+    pub fn stoch_is_ready(&self) -> bool{
+        self.stoch.is_ready()
     }
 
     pub fn get_stoch_rsi(&self) -> Option<f32> {
@@ -202,10 +213,13 @@ impl Indicator for Rsi{
             }
                   }
     }
-    fn get_last(&self) -> Option<f32>{
+    fn get_last(&self) -> Option<Value>{
 
-            self.value
-        }  
+        if let Some(val) = self.value{
+            return Some(Value::RsiValue(val));
+        }
+        None
+    }  
 
    
 
@@ -332,7 +346,74 @@ impl Default for Rsi{
             last_price: None,
             value: None,
             sma: Some(SmaOnRsi::new(10)),
-            stoch: StochRsi::new(14, 3, 3),
+            stoch: StochBuffer::new(14, 3, 3),
         }
     }
 }
+
+
+
+#[derive(Clone, Debug)]
+pub struct SmaRsi{
+    periods: u32,
+    rsi: Rsi,
+}
+
+
+impl SmaRsi{
+
+    pub fn new(periods: u32, smoothing: u32 ) ->Self{
+        
+        SmaRsi{
+            periods,
+            rsi: Rsi::new(periods, 4, None, None, Some(smoothing)),
+        }
+    }
+}
+
+impl Indicator for SmaRsi{
+
+    fn update_before_close(&mut self, price: Price){
+            self.rsi.update_before_close(price);
+    }
+ 
+    fn update_after_close(&mut self, price: Price){
+            self.rsi.update_after_close(price);
+    }
+
+    fn is_ready(&self) -> bool{
+        self.rsi.sma_is_ready()
+    }
+
+    fn get_last(&self) -> Option<Value>{
+        if let Some(val) = self.rsi.get_sma_rsi(){
+            return Some(Value::SmaRsiValue(val));
+        }
+        None
+    }
+
+    fn load(&mut self, price_data: &[Price]){
+        self.rsi.load(price_data)
+    }
+    
+    fn reset(&mut self){
+        self.rsi.reset();
+    }
+    fn period(&self)-> u32{
+        self.periods
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

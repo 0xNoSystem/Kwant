@@ -1,4 +1,4 @@
-use crate::indicators::{Price, Indicator, Sma};
+use crate::indicators::{Price,Value, Indicator, Sma};
 
 
 #[derive(Clone, Debug)]
@@ -7,7 +7,7 @@ pub struct Ema{
     alpha: f32,
     buff: Sma,
     prev_value: Option<f32>,
-    value: Option<f32>,
+    pub value: Option<f32>,
     slope: Option<f32>,
 }
 
@@ -119,10 +119,12 @@ impl Indicator for EmaCross{
         self.long.reset();
         self.prev_uptrend = None;
     }
+    fn get_last(&self) -> Option<Value>{
+        if let (Some(sh), Some(lg)) = (self.short.value, self.long.value){
+            return Some(Value::EmaCrossValue{short: sh, long: lg, trend:self.get_trend().unwrap()});  
+        }
 
-    fn get_last(&self) -> Option<f32>{
-        //return the long Ema value
-        self.long.get_last()
+        None
 }
 
 }
@@ -154,9 +156,6 @@ impl Ema{
         }
     }
 
-    pub fn get_sma(&self) -> Option<f32>{
-        self.buff.get_last()
-    }
 
     pub fn get_slope(&self) -> Option<f32>{
         self.slope
@@ -177,7 +176,7 @@ impl Indicator for Ema{
             self.value = Some(ema);
         }else{
             if self.buff.is_ready(){
-            self.value = self.buff.get_last();
+                self.value = self.buff.value;
         }
 
         
@@ -200,8 +199,12 @@ impl Indicator for Ema{
         
     }
 
-    fn get_last(&self) -> Option<f32>{
-        self.value
+    fn get_last(&self) -> Option<Value>{
+        if let Some(val) = self.value{
+            return Some(Value::EmaValue(val));
+        }
+
+        None
     }
 
     fn is_ready(&self) -> bool{
