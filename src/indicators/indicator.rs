@@ -1,7 +1,7 @@
 use crate::indicators::Price;
 use std::fmt::Debug;
 
-pub trait Indicator: Clone + Debug + Sync + Send{
+pub trait Indicator: Debug + Sync + Send{
 
     fn update_after_close(&mut self, last_price: Price);
     fn update_before_close(&mut self, last_price: Price);
