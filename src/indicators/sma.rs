@@ -45,7 +45,7 @@ impl Indicator for Sma{
             self.value = Some(self.sum / self.periods as f32);
         }
 
-        self.in_candle = false;
+        self.in_candle = true;
     }
 
     fn update_before_close(&mut self, price: Price){
@@ -54,16 +54,17 @@ impl Indicator for Sma{
         if self.is_ready(){
             let last_price: f32;
             if !self.in_candle{
-                last_price = self.buff.pop_front().unwrap();
-            }else{
                 last_price = self.buff.pop_back().unwrap();
+            }else{
+                last_price = self.buff.pop_front().unwrap();
+                self.in_candle = false;
             }
             self.sum -= last_price;
             self.buff.push_back(price);
             self.sum += price;
             
             self.value = Some(self.sum/ self.periods as f32);
-            self.in_candle = true;
+            
         }
     }
 
