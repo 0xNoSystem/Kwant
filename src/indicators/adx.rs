@@ -5,21 +5,21 @@ use crate::indicators::{Value,Price, Indicator};
 pub struct Adx {
     periods: u32,
     buff: AdxBuffer,
-    prev_close: Option<f32>,
-    prev_value: Option<f32>,
-    value: Option<f32>,
+    prev_close: Option<f64>,
+    prev_value: Option<f64>,
+    value: Option<f64>,
 }
 
 #[derive(Clone, Debug)]
 struct AdxBuffer {
     di_length: u32,
-    prev_high: Option<f32>,
-    prev_low: Option<f32>,
-    prev_dm_pos: Option<f32>,
-    prev_dm_neg: Option<f32>,
-    prev_tr: Option<f32>,
-    dx_buffer: VecDeque<f32>,
-    dx: Option<f32>,
+    prev_high: Option<f64>,
+    prev_low: Option<f64>,
+    prev_dm_pos: Option<f64>,
+    prev_dm_neg: Option<f64>,
+    prev_tr: Option<f64>,
+    dx_buffer: VecDeque<f64>,
+    dx: Option<f64>,
 }
 
 impl Adx {
@@ -34,21 +34,21 @@ impl Adx {
         }
     }
 
-    fn calc_adx(&mut self, dx: f32, after: bool) {
+    fn calc_adx(&mut self, dx: f64, after: bool) {
     let length = self.periods;
 
     if self.prev_value.is_none(){
         if after{
             self.buff.dx_buffer.push_back(dx);
             if self.buff.dx_buffer.len() == length as usize{
-                let sum: f32 = self.buff.dx_buffer.iter().sum();
-                let initial_adx = sum / length as f32;
+                let sum: f64 = self.buff.dx_buffer.iter().sum();
+                let initial_adx = sum / length as f64;
                 self.prev_value = Some(initial_adx);
                 self.value = Some(initial_adx);
         }}
     } else {
         let prev_adx = self.prev_value.unwrap();
-        let new_adx = (prev_adx * (length as f32 - 1.0) + dx) / length as f32;
+        let new_adx = (prev_adx * (length as f64 - 1.0) + dx) / length as f64;
         self.value = Some(new_adx);
         if after {
             self.prev_value = Some(new_adx);
@@ -140,8 +140,8 @@ impl AdxBuffer {
         }
     }
 
-    fn update_after_close(&mut self, high: f32, low: f32, tr: f32) {
-        let length = self.di_length as f32;
+    fn update_after_close(&mut self, high: f64, low: f64, tr: f64) {
+        let length = self.di_length as f64;
 
         if let Some(smoothed_tr) = self.prev_tr {
             let new_tr = (smoothed_tr * (length - 1.0) + tr) / length;
@@ -174,9 +174,9 @@ impl AdxBuffer {
         self.prev_low = Some(low);
     }
 
-    fn update_before_close(&mut self, high: f32, low: f32, tr: f32) {
+    fn update_before_close(&mut self, high: f64, low: f64, tr: f64) {
         self.dx = None;
-        let length = self.di_length as f32;
+        let length = self.di_length as f64;
 
         let provisional_tr = if let Some(smoothed_tr) = self.prev_tr {
             (smoothed_tr * (length - 1.0) + tr) / length
@@ -198,8 +198,8 @@ impl AdxBuffer {
         }
     }
 
-    fn calc_dx(&mut self, dm_pos: f32, dm_neg: f32, tr: f32) {
-        if tr <= f32::EPSILON {
+    fn calc_dx(&mut self, dm_pos: f64, dm_neg: f64, tr: f64) {
+        if tr <= f64::EPSILON {
             self.dx = Some(0.0);
             return;
         }

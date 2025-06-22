@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Price {
-    pub open: f32,
-    pub high: f32,
-    pub low: f32,
-    pub close: f32,
+    pub open: f64,
+    pub high: f64,
+    pub low: f64,
+    pub close: f64,
 }

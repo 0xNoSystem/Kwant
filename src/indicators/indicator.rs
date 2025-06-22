@@ -14,12 +14,12 @@ pub trait Indicator: Debug + Sync + Send{
 
 #[derive(PartialEq, PartialOrd, Copy, Clone, Debug)]
 pub enum Value{
-    RsiValue(f32),
-    StochRsiValue{k: f32, d: f32},
-    EmaValue(f32),
-    EmaCrossValue{short: f32, long: f32, trend: bool},
-    SmaValue(f32),
-    SmaRsiValue(f32),
-    AdxValue(f32),
-    AtrValue(f32),
+    RsiValue(f64),
+    StochRsiValue{k: f64, d: f64},
+    EmaValue(f64),
+    EmaCrossValue{short: f64, long: f64, trend: bool},
+    SmaValue(f64),
+    SmaRsiValue(f64),
+    AdxValue(f64),
+    AtrValue(f64),
 }

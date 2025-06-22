@@ -7,27 +7,27 @@ use crate::indicators::stoch_rsi::StochBuffer;
 pub struct Rsi{
     periods: u32,
     buff: RsiBuffer,
-    last_price: Option<f32>,
-    value: Option<f32>,
+    last_price: Option<f64>,
+    value: Option<f64>,
     sma: Option<SmaOnRsi>,
     stoch: StochBuffer,
 }
 
 #[derive(Clone, Debug)]
 struct RsiBuffer{
-    changes_buffer: VecDeque<f32>, 
-    sum_gain: f32,
-    sum_loss: f32,
-    last_avg_gain: Option<f32>,
-    last_avg_loss: Option<f32>,
+    changes_buffer: VecDeque<f64>, 
+    sum_gain: f64,
+    sum_loss: f64,
+    last_avg_gain: Option<f64>,
+    last_avg_loss: Option<f64>,
     in_candle: bool,
 }
 
 #[derive(Clone, Debug)]
 struct SmaOnRsi{
-    buff: VecDeque<f32>,
+    buff: VecDeque<f64>,
     length: u32, 
-    current_sum: f32,
+    current_sum: f64,
 }
 
 
@@ -44,7 +44,7 @@ impl SmaOnRsi{
         }
     }
 
-    fn push(&mut self, new_rsi: f32){
+    fn push(&mut self, new_rsi: f64){
 
         if self.is_full(){
             let expired_rsi = self.buff.pop_front().unwrap();
@@ -55,10 +55,10 @@ impl SmaOnRsi{
 
     }
 
-    fn get(&self) -> Option<f32>{
+    fn get(&self) -> Option<f64>{
 
         if self.is_full(){
-            Some(self.current_sum / (self.length) as f32)
+            Some(self.current_sum / (self.length) as f64)
         }else{
             None
         }
@@ -93,13 +93,13 @@ impl Rsi{
         }
     }
 
-     fn calc_rsi(&mut self, change: f32, last_avg_gain: f32, last_avg_loss: f32, after: bool) -> Option<f32>{
+     fn calc_rsi(&mut self, change: f64, last_avg_gain: f64, last_avg_loss: f64, after: bool) -> Option<f64>{
 
         let change_loss = (-change).max(0.0);
         let change_gain = (change).max(0.0);
 
-        let avg_gain = (last_avg_gain*(self.periods as f32 - 1.0) + change_gain) / self.periods as f32;
-        let avg_loss = (last_avg_loss*(self.periods as f32 - 1.0)+ change_loss ) /self.periods as f32;
+        let avg_gain = (last_avg_gain*(self.periods as f64 - 1.0) + change_gain) / self.periods as f64;
+        let avg_loss = (last_avg_loss*(self.periods as f64 - 1.0)+ change_loss ) /self.periods as f64;
 
         let rsi = if avg_loss == 0.0{
             100.0
@@ -123,7 +123,7 @@ impl Rsi{
         Some(rsi)
     }
     
-    pub fn get_sma_rsi(&self) -> Option<f32>{
+    pub fn get_sma_rsi(&self) -> Option<f64>{
         if let Some(sma) = &self.sma{
             sma.get()
         }else{
@@ -142,11 +142,11 @@ impl Rsi{
         self.stoch.is_ready()
     }
 
-    pub fn get_stoch_rsi(&self) -> Option<f32> {
+    pub fn get_stoch_rsi(&self) -> Option<f64> {
         self.stoch.get_k()
     }
 
-    pub fn get_stoch_signal(&self) -> Option<f32> {
+    pub fn get_stoch_signal(&self) -> Option<f64> {
         self.stoch.get_d()
     }
 }
@@ -258,15 +258,15 @@ impl RsiBuffer{
     fn new(capacity: u32) -> Self{
         RsiBuffer{
             changes_buffer: VecDeque::with_capacity(capacity as usize), 
-            sum_gain: 0_f32,
-            sum_loss: 0_f32,
+            sum_gain: 0_f64,
+            sum_loss: 0_f64,
             last_avg_gain: None,
             last_avg_loss: None,
             in_candle: true,   
         }
     }
 
-    fn push(&mut self, change: f32){
+    fn push(&mut self, change: f64){
         
         if self.is_full(){
             self.init_last_avg();
@@ -289,10 +289,10 @@ impl RsiBuffer{
         self.in_candle = true;
 
     }
-    fn push_before_close(&mut self, change: f32){
+    fn push_before_close(&mut self, change: f64){
 
         if !self.is_full(){return;}
-        let expired_change: f32;
+        let expired_change: f64;
         if !self.in_candle{
             expired_change = self.changes_buffer.pop_back().unwrap();
         }else{
@@ -324,11 +324,11 @@ impl RsiBuffer{
 
     fn init_last_avg(&mut self){
         if self.last_avg_gain.is_none(){
-                self.last_avg_gain = Some(self.sum_gain / (self.changes_buffer.capacity()) as f32);
+                self.last_avg_gain = Some(self.sum_gain / (self.changes_buffer.capacity()) as f64);
             }
 
         if self.last_avg_loss.is_none(){
-            self.last_avg_loss = Some(self.sum_loss / (self.changes_buffer.capacity()) as f32);
+            self.last_avg_loss = Some(self.sum_loss / (self.changes_buffer.capacity()) as f64);
         }
     }
 

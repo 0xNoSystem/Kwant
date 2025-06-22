@@ -1,8 +1,8 @@
 use std::collections::VecDeque;
 use crate::indicators::{Value,Price, Indicator};
 use crate::indicators::Rsi;
-fn is_same(a: f32, b: f32) -> bool {
-    (a - b).abs() < f32::EPSILON
+fn is_same(a: f64, b: f64) -> bool {
+    (a - b).abs() < f64::EPSILON
 }
 
 
@@ -72,16 +72,16 @@ impl Default for StochasticRsi{
 
 #[derive(Clone, Debug)]
 pub struct StochBuffer {
-    buffer: VecDeque<f32>,
+    buffer: VecDeque<f64>,
     length: u32,
-    current_min: f32,
-    current_max: f32,
+    current_min: f64,
+    current_max: f64,
 
     // Buffers for double smoothing
-    k_smoothing_buffer: VecDeque<f32>,
-    k_value: Option<f32>,
-    d_buffer: VecDeque<f32>,
-    d_value: Option<f32>,
+    k_smoothing_buffer: VecDeque<f64>,
+    k_value: Option<f64>,
+    d_buffer: VecDeque<f64>,
+    d_value: Option<f64>,
     in_candle: bool,
 }
 
@@ -97,8 +97,8 @@ impl StochBuffer {
         Self {
             buffer: VecDeque::with_capacity(length as usize),
             length,
-            current_min: f32::INFINITY,
-            current_max: f32::NEG_INFINITY,
+            current_min: f64::INFINITY,
+            current_max: f64::NEG_INFINITY,
 
             k_smoothing_buffer: VecDeque::with_capacity(k_smoothing as usize),
             k_value: None,
@@ -112,7 +112,7 @@ impl StochBuffer {
         self.length
     }
 
-    pub fn update_after_close(&mut self, rsi: f32) {
+    pub fn update_after_close(&mut self, rsi: f64) {
         if self.buffer.len() == self.length as usize{
             let expired = self.buffer.pop_front().unwrap();
             if is_same(expired, self.current_min) || is_same(expired, self.current_max) {
@@ -132,7 +132,7 @@ impl StochBuffer {
         self.in_candle = true;
     }
 
-    pub fn update_before_close(&mut self, rsi: f32) {
+    pub fn update_before_close(&mut self, rsi: f64) {
         if self.is_ready(){
             if let Some(&old_rsi) = self.buffer.back() {
                 if is_same(old_rsi, rsi) && !self.in_candle {
@@ -164,7 +164,7 @@ impl StochBuffer {
 
     }
 
-    pub fn get_diff(&self) -> Option<f32>{
+    pub fn get_diff(&self) -> Option<f64>{
         if let (Some(k), Some(d)) = (self.k_value, self.d_value){
             return Some(k - d);
         };
@@ -172,7 +172,7 @@ impl StochBuffer {
         None
     }
 
-    fn compute_stoch_rsi(&mut self, latest_rsi: f32, after: bool) {
+    fn compute_stoch_rsi(&mut self, latest_rsi: f64, after: bool) {
         if self.buffer.len() == self.length as usize && self.current_max != self.current_min {
             let raw_k = (latest_rsi - self.current_min) / (self.current_max - self.current_min);
             self.push_k_smoothing(raw_k, after);
@@ -182,7 +182,7 @@ impl StochBuffer {
         }
     }
 
-    fn push_k_smoothing(&mut self, raw_k: f32, after: bool) {
+    fn push_k_smoothing(&mut self, raw_k: f64, after: bool) {
 
         let k_len = self.k_smoothing_buffer.capacity();
         
@@ -201,8 +201,8 @@ impl StochBuffer {
         }
         
         if self.k_smoothing_buffer.len() == k_len {
-            let sum_k: f32 = self.k_smoothing_buffer.iter().sum();
-            let smoothed_k = sum_k / k_len as f32;
+            let sum_k: f64 = self.k_smoothing_buffer.iter().sum();
+            let smoothed_k = sum_k / k_len as f64;
             self.k_value = Some(smoothed_k);
             self.push_d_smoothing(smoothed_k, after);
         } else {
@@ -211,7 +211,7 @@ impl StochBuffer {
         }
     }
 
-    fn push_d_smoothing(&mut self, k_val: f32, after: bool) {
+    fn push_d_smoothing(&mut self, k_val: f64, after: bool) {
         let d_len = self.d_buffer.capacity();
         
         if self.d_buffer.len() == d_len{
@@ -229,18 +229,18 @@ impl StochBuffer {
         }
         // If the buffer is not full, we don't compute the average
         if self.d_buffer.len() == d_len {
-            let sum_d: f32 = self.d_buffer.iter().sum();
-            self.d_value = Some(sum_d / d_len as f32);
+            let sum_d: f64 = self.d_buffer.iter().sum();
+            self.d_value = Some(sum_d / d_len as f64);
         } else {
             self.d_value = None;
         }
     }
 
-    pub fn get_k(&self) -> Option<f32> {
+    pub fn get_k(&self) -> Option<f64> {
         self.k_value.map(|val| val * 100.0)
     }
 
-    pub fn get_d(&self) -> Option<f32> {
+    pub fn get_d(&self) -> Option<f64> {
         self.d_value.map(|val| val * 100.0)
     }
 
@@ -250,8 +250,8 @@ impl StochBuffer {
 
     pub fn reset(&mut self) {
         self.buffer.clear();
-        self.current_min = f32::INFINITY;
-        self.current_max = f32::NEG_INFINITY;
+        self.current_min = f64::INFINITY;
+        self.current_max = f64::NEG_INFINITY;
         self.k_smoothing_buffer.clear();
         self.k_value = None;
         self.d_buffer.clear();
@@ -259,8 +259,8 @@ impl StochBuffer {
     }
 
     fn recompute_min_max(&mut self) {
-        self.current_min = f32::INFINITY;
-        self.current_max = f32::NEG_INFINITY;
+        self.current_min = f64::INFINITY;
+        self.current_max = f64::NEG_INFINITY;
         for &val in &self.buffer {
             if val < self.current_min {
                 self.current_min = val;

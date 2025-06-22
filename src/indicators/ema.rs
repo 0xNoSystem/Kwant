@@ -4,11 +4,11 @@ use crate::indicators::{Price,Value, Indicator, Sma};
 #[derive(Clone, Debug)]
 pub struct Ema{
     periods: u32,
-    alpha: f32,
+    alpha: f64,
     buff: Sma,
-    prev_value: Option<f32>,
-    pub value: Option<f32>,
-    slope: Option<f32>,
+    prev_value: Option<f64>,
+    pub value: Option<f64>,
+    slope: Option<f64>,
 }
 
 #[derive(Clone, Debug)]
@@ -149,7 +149,7 @@ impl Ema{
         Ema{
             periods,
             buff: Sma::new(periods),
-           alpha: 2.0/(periods as f32 + 1.0),
+           alpha: 2.0/(periods as f64 + 1.0),
             prev_value: None,
             value: None,
             slope: None,
@@ -157,7 +157,7 @@ impl Ema{
     }
 
 
-    pub fn get_slope(&self) -> Option<f32>{
+    pub fn get_slope(&self) -> Option<f64>{
         self.slope
     }
 }

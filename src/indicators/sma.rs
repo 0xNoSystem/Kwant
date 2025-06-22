@@ -5,9 +5,9 @@ use crate::indicators::{Price,Value, Indicator};
 #[derive(Clone, Debug)]
 pub struct Sma{
     periods: u32,
-    buff: VecDeque<f32>,
-    sum: f32,
-    pub value: Option<f32>,
+    buff: VecDeque<f64>,
+    sum: f64,
+    pub value: Option<f64>,
     in_candle: bool,
 }
 
@@ -42,7 +42,7 @@ impl Indicator for Sma{
         self.buff.push_back(price);
         self.sum += price;
         if self.is_ready(){
-            self.value = Some(self.sum / self.periods as f32);
+            self.value = Some(self.sum / self.periods as f64);
         }
 
         self.in_candle = true;
@@ -52,7 +52,7 @@ impl Indicator for Sma{
 
         let price = price.close;
         if self.is_ready(){
-            let last_price: f32;
+            let last_price: f64;
             if !self.in_candle{
                 last_price = self.buff.pop_back().unwrap();
             }else{
@@ -63,7 +63,7 @@ impl Indicator for Sma{
             self.buff.push_back(price);
             self.sum += price;
             
-            self.value = Some(self.sum/ self.periods as f32);
+            self.value = Some(self.sum/ self.periods as f64);
             
         }
     }
