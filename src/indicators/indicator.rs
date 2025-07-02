@@ -1,6 +1,8 @@
 use crate::indicators::Price;
 use std::fmt::Debug;
 
+use serde::{Deserialize, Serialize};
+
 pub trait Indicator: Debug + Sync + Send{
 
     fn update_after_close(&mut self, last_price: Price);
@@ -12,7 +14,8 @@ pub trait Indicator: Debug + Sync + Send{
     fn period(&self) -> u32;
 }
 
-#[derive(PartialEq, PartialOrd, Copy, Clone, Debug)]
+#[derive(PartialEq, PartialOrd, Copy, Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum Value{
     RsiValue(f64),
     StochRsiValue{k: f64, d: f64},
