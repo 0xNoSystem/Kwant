@@ -80,11 +80,7 @@ impl Indicator for Atr{
 }
 
     fn get_last(&self) -> Option<Value>{
-        if let Some(price) = self.prev_close{
-            return self.normalized(price);
-        }
-
-        None
+        self.value.map(|value| Value::AtrValue(value))
     }
     fn load(&mut self, price_data: &[Price]){
         for p in price_data{
