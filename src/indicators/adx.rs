@@ -228,3 +228,125 @@ impl AdxBuffer {
         self.dx = None;
     }
 }
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::indicators::{Indicator, Price, Value};
+
+    fn p(h: f64, l: f64, c: f64) -> Price {
+        Price { high: h, low: l, close: c, open: l }
+    }
+
+    #[test]
+    fn test_adx_warmup_and_initial_value() {
+        let mut adx = Adx::new(3, 3);
+
+        adx.update_after_close(p(10.0, 5.0, 8.0));
+        assert!(!adx.is_ready());
+
+        adx.update_after_close(p(12.0, 7.0, 11.0));
+        assert!(!adx.is_ready());
+
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(15.0, 9.0, 13.0));
+        adx.update_after_close(p(14.0, 10.0, 14.0));
+        adx.update_after_close(p(17.0, 11.0, 16.0));
+        adx.update_after_close(p(14.0, 10.0, 14.0));
+        adx.update_after_close(p(17.0, 11.0, 16.0));
+        adx.update_after_close(p(17.0, 11.0, 16.0));
+        adx.update_after_close(p(19.0, 13.0, 18.0));
+        assert!(adx.is_ready());
+        assert!(matches!(adx.get_last(), Some(Value::AdxValue(_))));
+    }
+
+    #[test]
+    fn test_adx_progression_after_warmup() {
+        let mut adx = Adx::new(3, 3);
+
+        adx.update_after_close(p(10.0, 5.0, 8.0));
+        adx.update_after_close(p(12.0, 7.0, 11.0));
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(10.0, 5.0, 8.0));
+        adx.update_after_close(p(12.0, 7.0, 11.0));
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(15.0, 11.0, 13.0));
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(15.0, 11.0, 13.0));
+
+        let first = match adx.get_last() {
+            Some(Value::AdxValue(v)) => v,
+            _ => panic!("missing adx"),
+        };
+
+        adx.update_after_close(p(14.0, 9.0, 13.0));
+
+        let second = match adx.get_last() {
+            Some(Value::AdxValue(v)) => v,
+            _ => panic!("missing adx"),
+        };
+
+        assert_ne!(first, second);
+    }
+
+    #[test]
+    fn test_before_close_provisional_adx() {
+        let mut adx = Adx::new(3, 3);
+
+        adx.update_after_close(p(10.0, 5.0, 8.0));
+        adx.update_after_close(p(12.0, 7.0, 11.0));
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(10.0, 5.0, 8.0));
+        adx.update_after_close(p(12.0, 7.0, 11.0));
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(15.0, 11.0, 13.0));
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(15.0, 11.0, 13.0));
+
+
+
+        let after_close_val = match adx.get_last() {
+            Some(Value::AdxValue(v)) => v,
+            _ => panic!("missing adx"),
+        };
+
+        adx.update_before_close(p(15.0, 10.0, 14.0));
+
+        let provisional = match adx.get_last() {
+            Some(Value::AdxValue(v)) => v,
+            _ => panic!("missing provisional adx"),
+        };
+
+        assert_ne!(after_close_val, provisional);
+    }
+
+    #[test]
+    fn test_reset() {
+        let mut adx = Adx::new(3, 3);
+
+        adx.update_after_close(p(10.0, 5.0, 8.0));
+        adx.update_after_close(p(12.0, 7.0, 11.0));
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(15.0, 11.0, 13.0));
+        adx.update_after_close(p(13.0, 8.0, 12.0));
+        adx.update_after_close(p(15.0, 11.0, 13.0));
+
+
+        assert!(adx.is_ready());
+
+        adx.reset();
+
+        assert!(!adx.is_ready());
+        assert_eq!(adx.get_last(), None);
+        assert_eq!(adx.prev_close, None);
+        assert_eq!(adx.prev_value, None);
+        assert!(adx.buff.dx_buffer.is_empty());
+        assert_eq!(adx.buff.dx, None);
+    }
+}
+

@@ -119,29 +119,76 @@ impl Default for Atr {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::indicators::{Atr, Price};
+    use crate::indicators::{Atr, Price, Value};
 
-    #[test]
-    fn test_atr_update_after_close() {
-        let mut atr = Atr::new(3);
-
-        let prices = vec![
-            Price { high: 10.0, low: 5.0, close: 8.0, open: 5.0 },
-            Price { high: 12.0, low: 6.0, close: 10.0, open: 8.0 },
-            Price { high: 14.0, low: 7.0, close: 11.0, open: 10.0 },
-        ];
-
-        for price in prices {
-            atr.update_after_close(price);
-        }   
-
-        assert!(atr.is_ready());
-        assert_eq!(atr.get_last(), Some(6.0));
-
-        atr.update_before_close(Price{high: 11.1, low: 10.04, close: 10.9, open:11.0});
-        
-     }
+    fn p(h: f64, l: f64, c: f64) -> Price {
+        Price { high: h, low: l, close: c, open: l }
     }
 
+    #[test]
+    fn test_atr_warmup_and_initial_value() {
+        let mut atr = Atr::new(3);
 
+        atr.update_after_close(p(10.0, 5.0, 8.0));
+        assert!(!atr.is_ready());
+
+        atr.update_after_close(p(12.0, 6.0, 10.0));
+        assert!(!atr.is_ready());
+
+        atr.update_after_close(p(14.0, 7.0, 11.0));
+        assert!(atr.is_ready());
+        assert_eq!(atr.get_last(), Some(Value::AtrValue(6.0)));
+    }
+
+    #[test]
+    fn test_atr_updates_after_warmup() {
+        let mut atr = Atr::new(3);
+
+        atr.update_after_close(p(10.0, 5.0, 8.0));
+        atr.update_after_close(p(12.0, 6.0, 10.0));
+        atr.update_after_close(p(14.0, 7.0, 11.0));
+
+        atr.update_after_close(p(16.0, 8.0, 15.0));
+        let tr = calc_tr(16.0, 8.0, 11.0);
+        let expected = (6.0 * 2.0 + tr) / 3.0;
+
+        assert_eq!(atr.get_last(), Some(Value::AtrValue(expected)));
+    }
+
+    #[test]
+    fn test_update_before_close_provisional() {
+        let mut atr = Atr::new(3);
+
+        atr.update_after_close(p(10.0, 5.0, 8.0));
+        atr.update_after_close(p(12.0, 6.0, 10.0));
+        atr.update_after_close(p(14.0, 7.0, 11.0));
+
+        atr.update_before_close(p(15.0, 13.0, 14.0));
+
+        if let Some(Value::AtrValue(v)) = atr.get_last() {
+            assert!(v > 0.0);
+        } else {
+            panic!("ATR not set");
+        }
+    }
+
+    #[test]
+    fn test_reset() {
+        let mut atr = Atr::new(3);
+
+        atr.update_after_close(p(10.0, 5.0, 8.0));
+        atr.update_after_close(p(12.0, 6.0, 10.0));
+        atr.update_after_close(p(14.0, 7.0, 11.0));
+
+        assert!(atr.is_ready());
+
+        atr.reset();
+
+        assert!(!atr.is_ready());
+        assert_eq!(atr.get_last(), None);
+        assert_eq!(atr.prev_close, None);
+        assert_eq!(atr.prev_value, None);
+        assert!(atr.warmup_trs.is_empty());
+    }
+}
 
