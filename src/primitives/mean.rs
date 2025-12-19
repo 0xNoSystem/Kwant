@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use crate::indicators::{Indicator, Price, Value};
 
 #[derive(Clone, Debug)]
 pub struct Mean {
@@ -23,24 +22,22 @@ impl Mean {
             in_candle: true,
         }
     }
-
+    #[inline]
     pub fn sum(&self) -> f64 {
         self.sum
     }
 
+    #[inline]
     pub fn sum_sq(&self) -> f64 {
         self.sum_sq
     }
-
+    
+    #[inline]
     pub fn len(&self) -> usize {
         self.buff.len()
     }
-}
 
-impl Indicator for Mean {
-    fn update_after_close(&mut self, price: Price) {
-        let x = price.close;
-
+    pub fn update_after_close(&mut self, x: f64) {
         if self.is_ready() {
             let expired = self.buff.pop_front().unwrap();
             self.sum -= expired;
@@ -58,12 +55,10 @@ impl Indicator for Mean {
         self.in_candle = true;
     }
 
-    fn update_before_close(&mut self, price: Price) {
+    pub fn update_before_close(&mut self, x: f64) {
         if !self.is_ready() {
             return;
         }
-
-        let x = price.close;
 
         let replaced = if self.in_candle {
             self.in_candle = false;
@@ -82,21 +77,23 @@ impl Indicator for Mean {
         self.value = Some(self.sum / self.periods as f64);
     }
 
-    fn load(&mut self, price_data: &[Price]) {
+    pub fn load(&mut self, price_data: &[f64]) {
         for p in price_data {
             self.update_after_close(*p);
         }
     }
-
-    fn is_ready(&self) -> bool {
+    
+    #[inline]
+    pub fn is_ready(&self) -> bool {
         self.buff.len() == self.buff.capacity()
     }
 
-    fn get_last(&self) -> Option<Value> {
-        self.value.map(Value::MeanValue)
+    #[inline]
+    pub fn get_last(&self) -> Option<f64> {
+        self.value
     }
 
-    fn reset(&mut self) {
+    pub fn reset(&mut self) {
         self.buff.clear();
         self.sum = 0.0;
         self.sum_sq = 0.0;
@@ -104,8 +101,8 @@ impl Indicator for Mean {
         self.in_candle = true;
     }
 
-    fn period(&self) -> u32 {
+    #[inline]
+    pub fn period(&self) -> u32 {
         self.periods
     }
 }
-

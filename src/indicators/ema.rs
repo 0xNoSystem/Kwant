@@ -1,11 +1,11 @@
-use crate::indicators::{Price,Value, Indicator, Sma};
-
+use crate::indicators::{Price,Value, Indicator};
+use crate::Mean;
 
 #[derive(Clone, Debug)]
 pub struct Ema{
     periods: u32,
     alpha: f64,
-    buff: Sma,
+    buff: Mean,
     prev_value: Option<f64>,
     pub value: Option<f64>,
     slope: Option<f64>,
@@ -23,7 +23,6 @@ pub struct EmaCross{
 impl EmaCross{
 
     pub fn new(period_short: u32, period_long: u32) -> Self{
-        
         
         EmaCross{
             short: Ema::new(period_short.min(period_long)),
@@ -148,8 +147,8 @@ impl Ema{
 
         Ema{
             periods,
-            buff: Sma::new(periods),
-           alpha: 2.0/(periods as f64 + 1.0),
+            buff: Mean::new(periods),
+            alpha: 2.0/(periods as f64 + 1.0),
             prev_value: None,
             value: None,
             slope: None,
@@ -167,7 +166,7 @@ impl Indicator for Ema{
 
     fn update_after_close(&mut self, price: Price){
         let close = price.close;
-        self.buff.update_after_close(price);
+        self.buff.update_after_close(price.close);
         
         if let Some(last_ema)  = self.value{
             let ema = (self.alpha*close) + (1.0 - self.alpha)*last_ema;
@@ -176,7 +175,7 @@ impl Indicator for Ema{
             self.value = Some(ema);
         }else{
             if self.buff.is_ready(){
-                self.value = self.buff.value;
+                self.value = self.buff.get_last();
         }
 
         
@@ -194,7 +193,7 @@ impl Indicator for Ema{
         }
 
         if self.buff.is_ready(){
-            self.buff.update_before_close(price);
+            self.buff.update_before_close(price.close);
         }
         
     }
@@ -213,7 +212,6 @@ impl Indicator for Ema{
     }
 
     fn load(&mut self, price_data: &[Price]){
-
         for p in price_data{
             self.update_after_close(*p);
         }
@@ -236,7 +234,7 @@ impl Default for Ema{
 
         Ema{
             periods: 9,
-            buff: Sma::new(9),
+            buff: Mean::new(9),
             alpha: 2.0/(9.0 + 1.0),
             prev_value: None,
             value: None,

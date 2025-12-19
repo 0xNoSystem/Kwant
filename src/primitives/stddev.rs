@@ -35,17 +35,19 @@ impl StdDev {
 
 impl Indicator for StdDev {
     fn update_before_close(&mut self, price: Price) {
-        self.mean.update_before_close(price);
+        self.mean.update_before_close(price.close);
         self.compute();
     }
 
     fn update_after_close(&mut self, price: Price) {
-        self.mean.update_after_close(price);
+        self.mean.update_after_close(price.close);
         self.compute();
     }
 
     fn load(&mut self, price_data: &[Price]) {
-        self.mean.load(price_data);
+        for p in price_data.iter(){
+            self.mean.update_after_close(p.close);
+        }
         self.compute();
     }
 
