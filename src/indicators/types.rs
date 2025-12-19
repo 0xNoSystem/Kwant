@@ -6,4 +6,5 @@ pub struct Price {
     pub close: f64,
     pub open_time: u64,
     pub close_time: u64,
+    pub vlm: f64,
 }

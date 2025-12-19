@@ -55,6 +55,7 @@ impl SmaOnRsi{
 
     }
 
+    #[inline]
     fn get(&self) -> Option<f64>{
 
         if self.is_full(){
@@ -66,6 +67,7 @@ impl SmaOnRsi{
 
     }
 
+    #[inline]
     fn is_full(&self) -> bool{
 
         self.buff.len() == self.length as usize
@@ -317,11 +319,13 @@ impl RsiBuffer{
     
 
 
+    #[inline]
     fn is_full(&self) -> bool{
 
         self.changes_buffer.len() == self.changes_buffer.capacity() - 1
     }
 
+    #[inline]
     fn init_last_avg(&mut self){
         if self.last_avg_gain.is_none(){
                 self.last_avg_gain = Some(self.sum_gain / (self.changes_buffer.capacity()) as f64);
@@ -404,7 +408,6 @@ impl Indicator for SmaRsi{
     }
 
 }
-
 
 
 
