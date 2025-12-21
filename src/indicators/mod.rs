@@ -1,11 +1,12 @@
-pub mod rsi;
-pub mod stoch_rsi;
-pub mod ema;
-pub mod sma;
-pub mod atr;
-pub mod adx;
-pub mod indicator;
-pub mod types;
+mod rsi;
+mod stoch_rsi;
+mod ema;
+mod sma;
+mod atr;
+mod adx;
+mod indicator;
+mod volume_ma;
+mod types;
 
 pub use rsi::{Rsi, SmaRsi};
 pub use ema::Ema;
@@ -16,3 +17,4 @@ pub use atr::Atr;
 pub use adx::Adx;
 pub use types::Price;
 pub use indicator::{Indicator, Value};
+pub use volume_ma::VolumeMa;

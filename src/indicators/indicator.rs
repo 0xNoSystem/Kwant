@@ -25,6 +25,6 @@ pub enum Value{
     SmaRsiValue(f64),
     AdxValue(f64),
     AtrValue(f64),
-    VolMaValue(f64),
+    VolumeMaValue(f64),
     StdDevValue(f64),
 }
