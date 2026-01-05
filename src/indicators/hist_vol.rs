@@ -51,11 +51,12 @@ impl Indicator for HistVolatility {
     fn update_before_close(&mut self, price: Price) {
         if let (Some(prev), true) = (self.prev_close, self.returns.len() == self.periods as usize) {
             let provisional = (price.close / prev).ln();
+
             let mut tmp = self.returns.clone();
-            tmp.pop_back();
+            tmp.pop_front();
             tmp.push_back(provisional);
-            let tmp = tmp.make_contiguous();
-            self.value = Self::recompute(tmp);
+
+            self.value = Self::recompute(tmp.make_contiguous());
         }
     }
 
