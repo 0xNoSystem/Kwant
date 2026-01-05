@@ -26,4 +26,5 @@ pub enum Value {
     AtrValue(f64),
     VolumeMaValue(f64),
     StdDevValue(f64),
+    HistVolatilityValue(f64),
 }

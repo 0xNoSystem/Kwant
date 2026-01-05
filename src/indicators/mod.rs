@@ -1,6 +1,7 @@
 mod adx;
 mod atr;
 mod ema;
+mod hist_vol;
 mod indicator;
 mod rsi;
 mod sma;
@@ -12,6 +13,7 @@ pub use adx::Adx;
 pub use atr::Atr;
 pub use ema::Ema;
 pub use ema::EmaCross;
+pub use hist_vol::HistVolatility;
 pub use indicator::{Indicator, Value};
 pub use rsi::{Rsi, SmaRsi};
 pub use sma::Sma;
