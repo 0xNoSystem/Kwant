@@ -45,7 +45,7 @@ impl Indicator for StdDev {
     }
 
     fn load(&mut self, price_data: &[Price]) {
-        for p in price_data.iter(){
+        for p in price_data.iter() {
             self.mean.update_after_close(p.close);
         }
         self.compute();
@@ -68,4 +68,3 @@ impl Indicator for StdDev {
         self.periods
     }
 }
-

@@ -1,5 +1,5 @@
-pub mod stddev;
 pub mod mean;
+pub mod stddev;
 
-pub use stddev::StdDev;
 pub use mean::Mean;
+pub use stddev::StdDev;

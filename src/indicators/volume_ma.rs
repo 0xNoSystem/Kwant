@@ -1,20 +1,22 @@
-use crate::indicators::{Price,Value, Indicator};
 use crate::Mean;
+use crate::indicators::{Indicator, Price, Value};
 
 #[derive(Clone, Debug)]
-pub struct VolumeMa{
+pub struct VolumeMa {
     periods: u32,
-    mean: Mean, 
+    mean: Mean,
 }
 
-impl VolumeMa{
-
-    pub fn new(periods: u32) -> Self{
-
-        assert!(periods > 1, "VolMa  periods field must a positive integer n > 1, {} ", periods);
-        VolumeMa{
+impl VolumeMa {
+    pub fn new(periods: u32) -> Self {
+        assert!(
+            periods > 1,
+            "VolMa  periods field must a positive integer n > 1, {} ",
+            periods
+        );
+        VolumeMa {
             periods,
-            mean: Mean::new(periods), 
+            mean: Mean::new(periods),
         }
     }
 }
@@ -29,7 +31,7 @@ impl Indicator for VolumeMa {
     }
 
     fn load(&mut self, price_data: &[Price]) {
-        for p in price_data{
+        for p in price_data {
             self.mean.update_after_close(p.vlm);
         }
     }
@@ -39,9 +41,7 @@ impl Indicator for VolumeMa {
     }
 
     fn get_last(&self) -> Option<Value> {
-        self.mean
-            .get_last()
-            .map(Value::VolumeMaValue)
+        self.mean.get_last().map(Value::VolumeMaValue)
     }
 
     fn reset(&mut self) {
@@ -53,18 +53,11 @@ impl Indicator for VolumeMa {
     }
 }
 
-
-
-impl Default for VolumeMa{
-
-    fn default() -> Self{
-        VolumeMa{
+impl Default for VolumeMa {
+    fn default() -> Self {
+        VolumeMa {
             periods: 14,
-            mean: Mean::new(14),             
+            mean: Mean::new(14),
         }
     }
 }
-
-
-
-

@@ -31,7 +31,7 @@ impl Mean {
     pub fn sum_sq(&self) -> f64 {
         self.sum_sq
     }
-    
+
     #[inline]
     pub fn len(&self) -> usize {
         self.buff.len()
@@ -39,7 +39,11 @@ impl Mean {
 
     pub fn update_after_close(&mut self, x: f64) {
         if self.is_ready() {
-            let expired = self.buff.pop_front().unwrap();
+            let expired = if self.in_candle {
+                self.buff.pop_front().unwrap()
+            } else {
+                self.buff.pop_back().unwrap()
+            };
             self.sum -= expired;
             self.sum_sq -= expired * expired;
         }
@@ -82,10 +86,10 @@ impl Mean {
             self.update_after_close(*p);
         }
     }
-    
+
     #[inline]
     pub fn is_ready(&self) -> bool {
-        self.buff.len() == self.buff.capacity()
+        self.len() == self.periods as usize
     }
 
     #[inline]

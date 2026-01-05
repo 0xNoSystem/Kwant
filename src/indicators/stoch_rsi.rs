@@ -1,74 +1,65 @@
-use std::collections::VecDeque;
-use crate::indicators::{Value,Price, Indicator};
 use crate::indicators::Rsi;
+use crate::indicators::{Indicator, Price, Value};
+use std::collections::VecDeque;
 fn is_same(a: f64, b: f64) -> bool {
     (a - b).abs() < f64::EPSILON
 }
 
-
-
 #[derive(Clone, Debug)]
-pub struct StochasticRsi{
+pub struct StochasticRsi {
     periods: u32,
     rsi: Rsi,
 }
 
-
-impl StochasticRsi{
-
-    pub fn new(periods: u32, k_smoothing: Option<u32>, d_smoothing: Option<u32>) -> Self{
-        
-        StochasticRsi{
+impl StochasticRsi {
+    pub fn new(periods: u32, k_smoothing: Option<u32>, d_smoothing: Option<u32>) -> Self {
+        StochasticRsi {
             periods,
-            rsi: Rsi::new(periods,periods, k_smoothing, d_smoothing, None),
+            rsi: Rsi::new(periods, periods, k_smoothing, d_smoothing, None),
         }
     }
 }
 
-impl Indicator for StochasticRsi{
-
-    fn update_before_close(&mut self, price: Price){
+impl Indicator for StochasticRsi {
+    fn update_before_close(&mut self, price: Price) {
         self.rsi.update_before_close(price);
     }
-    fn update_after_close(&mut self, price: Price){
+    fn update_after_close(&mut self, price: Price) {
         self.rsi.update_after_close(price);
     }
 
-    fn is_ready(&self) -> bool{
-       self.rsi.stoch_is_ready() 
+    fn is_ready(&self) -> bool {
+        self.rsi.stoch_is_ready()
     }
 
-    fn get_last(&self) -> Option<Value>{
-        if let (Some(k), Some(d)) = (self.rsi.get_stoch_rsi(), self.rsi.get_stoch_signal()){
-            return Some(Value::StochRsiValue{k, d});
+    fn get_last(&self) -> Option<Value> {
+        if let (Some(k), Some(d)) = (self.rsi.get_stoch_rsi(), self.rsi.get_stoch_signal()) {
+            return Some(Value::StochRsiValue { k, d });
         }
         None
     }
 
-    fn reset(&mut self){
+    fn reset(&mut self) {
         self.rsi.reset();
     }
 
-    fn load(&mut self, price_data: &[Price]){
+    fn load(&mut self, price_data: &[Price]) {
         self.rsi.load(price_data);
     }
 
-    fn period(&self) -> u32{
+    fn period(&self) -> u32 {
         self.periods
     }
 }
 
-impl Default for StochasticRsi{
-    fn default() -> Self{
-
-        Self{
+impl Default for StochasticRsi {
+    fn default() -> Self {
+        Self {
             periods: 14,
             rsi: Rsi::new(14, 14, Some(3), Some(3), None),
         }
     }
 }
-
-
 
 #[derive(Clone, Debug)]
 pub struct StochBuffer {
@@ -108,9 +99,8 @@ impl StochBuffer {
         }
     }
 
-
     pub fn update_after_close(&mut self, rsi: f64) {
-        if self.buffer.len() == self.length as usize{
+        if self.buffer.len() == self.length as usize {
             let expired = self.buffer.pop_front().unwrap();
             if is_same(expired, self.current_min) || is_same(expired, self.current_max) {
                 self.recompute_min_max();
@@ -130,7 +120,7 @@ impl StochBuffer {
     }
 
     pub fn update_before_close(&mut self, rsi: f64) {
-        if self.is_ready(){
+        if self.is_ready() {
             if let Some(&old_rsi) = self.buffer.back() {
                 if is_same(old_rsi, rsi) && !self.in_candle {
                     return;
@@ -138,9 +128,9 @@ impl StochBuffer {
             }
             if self.buffer.len() == self.length as usize {
                 let expired;
-                if !self.in_candle{
+                if !self.in_candle {
                     expired = self.buffer.pop_back().unwrap();
-                }else{
+                } else {
                     expired = self.buffer.pop_front().unwrap();
                     self.in_candle = false;
                 }
@@ -158,7 +148,6 @@ impl StochBuffer {
             }
             self.compute_stoch_rsi(rsi, false);
         }
-
     }
 
     fn compute_stoch_rsi(&mut self, latest_rsi: f64, after: bool) {
@@ -172,23 +161,22 @@ impl StochBuffer {
     }
 
     fn push_k_smoothing(&mut self, raw_k: f64, after: bool) {
-
         let k_len = self.k_smoothing_buffer.capacity();
-        
-        if self.k_smoothing_buffer.len() == k_len{
-            if after{
+
+        if self.k_smoothing_buffer.len() == k_len {
+            if after {
                 self.k_smoothing_buffer.pop_front();
                 self.k_smoothing_buffer.push_back(raw_k);
-            }else{
+            } else {
                 self.k_smoothing_buffer.pop_back();
                 self.k_smoothing_buffer.push_back(raw_k);
             }
-        }else{
-            if after{
+        } else {
+            if after {
                 self.k_smoothing_buffer.push_back(raw_k);
             }
         }
-        
+
         if self.k_smoothing_buffer.len() == k_len {
             let sum_k: f64 = self.k_smoothing_buffer.iter().sum();
             let smoothed_k = sum_k / k_len as f64;
@@ -202,17 +190,17 @@ impl StochBuffer {
 
     fn push_d_smoothing(&mut self, k_val: f64, after: bool) {
         let d_len = self.d_buffer.capacity();
-        
-        if self.d_buffer.len() == d_len{
-            if after{
+
+        if self.d_buffer.len() == d_len {
+            if after {
                 self.d_buffer.pop_front();
                 self.d_buffer.push_back(k_val);
-            }else{
+            } else {
                 self.d_buffer.pop_back();
                 self.d_buffer.push_back(k_val);
             }
-        }else{  
-            if after{
+        } else {
+            if after {
                 self.d_buffer.push_back(k_val);
             }
         }

@@ -1,5 +1,5 @@
+use crate::indicators::{Indicator, Price, Value};
 use std::collections::VecDeque;
-use crate::indicators::{Value,Price, Indicator};
 
 #[derive(Clone, Debug)]
 pub struct Adx {
@@ -27,7 +27,7 @@ impl Adx {
         assert!(periods > 0, "Adx periods must be > 0, got {}", periods);
         Adx {
             periods,
-            buff: AdxBuffer::new(di_length),
+            buff: AdxBuffer::new(periods, di_length),
             prev_close: None,
             prev_value: None,
             value: None,
@@ -35,26 +35,27 @@ impl Adx {
     }
 
     fn calc_adx(&mut self, dx: f64, after: bool) {
-    let length = self.periods;
+        let length = self.periods;
 
-    if self.prev_value.is_none(){
-        if after{
-            self.buff.dx_buffer.push_back(dx);
-            if self.buff.dx_buffer.len() == length as usize{
-                let sum: f64 = self.buff.dx_buffer.iter().sum();
-                let initial_adx = sum / length as f64;
-                self.prev_value = Some(initial_adx);
-                self.value = Some(initial_adx);
-        }}
-    } else {
-        let prev_adx = self.prev_value.unwrap();
-        let new_adx = (prev_adx * (length as f64 - 1.0) + dx) / length as f64;
-        self.value = Some(new_adx);
-        if after {
-            self.prev_value = Some(new_adx);
+        if self.prev_value.is_none() {
+            if after {
+                self.buff.dx_buffer.push_back(dx);
+                if self.buff.dx_buffer.len() == length as usize {
+                    let sum: f64 = self.buff.dx_buffer.iter().sum();
+                    let initial_adx = sum / length as f64;
+                    self.prev_value = Some(initial_adx);
+                    self.value = Some(initial_adx);
+                }
+            }
+        } else {
+            let prev_adx = self.prev_value.unwrap();
+            let new_adx = (prev_adx * (length as f64 - 1.0) + dx) / length as f64;
+            self.value = Some(new_adx);
+            if after {
+                self.prev_value = Some(new_adx);
+            }
         }
     }
-}
 }
 
 impl Indicator for Adx {
@@ -79,7 +80,7 @@ impl Indicator for Adx {
     }
 
     fn update_before_close(&mut self, price: Price) {
-        if self.is_ready(){
+        if self.is_ready() {
             let h = price.high;
             let l = price.low;
             let h_l = h - l;
@@ -93,17 +94,15 @@ impl Indicator for Adx {
                 self.calc_adx(dx, false);
             }
         }
-}
+    }
 
-  
-    fn load(&mut self, price_data: &[Price]){
-
-        for p in price_data{
+    fn load(&mut self, price_data: &[Price]) {
+        for p in price_data {
             self.update_after_close(*p);
         }
     }
     fn get_last(&self) -> Option<Value> {
-        if let Some(val) = self.value{
+        if let Some(val) = self.value {
             return Some(Value::AdxValue(val));
         }
         None
@@ -113,7 +112,7 @@ impl Indicator for Adx {
         self.value.is_some()
     }
 
-    fn period(&self) -> u32{
+    fn period(&self) -> u32 {
         self.periods
     }
 
@@ -126,8 +125,12 @@ impl Indicator for Adx {
 }
 
 impl AdxBuffer {
-    fn new(di_length: u32) -> Self {
-        assert!(di_length > 0, "Adx di_length must be > 0, got {}", di_length);
+    fn new(adx_length: u32, di_length: u32) -> Self {
+        assert!(
+            di_length > 0,
+            "Adx di_length must be > 0, got {}",
+            di_length
+        );
         AdxBuffer {
             di_length,
             prev_high: None,
@@ -135,40 +138,64 @@ impl AdxBuffer {
             prev_dm_pos: None,
             prev_dm_neg: None,
             prev_tr: None,
-            dx_buffer: VecDeque::with_capacity(di_length as usize),
+            dx_buffer: VecDeque::with_capacity(adx_length as usize),
             dx: None,
         }
     }
-
     fn update_after_close(&mut self, high: f64, low: f64, tr: f64) {
-        let length = self.di_length as f64;
+        let di_len = self.di_length as f64;
 
-        if let Some(smoothed_tr) = self.prev_tr {
-            let new_tr = (smoothed_tr * (length - 1.0) + tr) / length;
-            self.prev_tr = Some(new_tr);
+        let smoothed_tr = if let Some(prev_tr) = self.prev_tr {
+            (prev_tr * (di_len - 1.0) + tr) / di_len
         } else {
             self.prev_tr = Some(tr);
+            self.prev_high = Some(high);
+            self.prev_low = Some(low);
             return;
-        }
+        };
+        self.prev_tr = Some(smoothed_tr);
 
-        if let (Some(prev_high), Some(prev_low)) = (self.prev_high, self.prev_low) {
-            let up_move = high - prev_high;
-            let down_move = prev_low - low;
-            let dm_pos = if up_move > down_move && up_move > 0.0 { up_move } else { 0.0 };
-            let dm_neg = if down_move > up_move && down_move > 0.0 { down_move } else { 0.0 };
+        let (prev_high, prev_low) = match (self.prev_high, self.prev_low) {
+            (Some(h), Some(l)) => (h, l),
+            _ => {
+                self.prev_high = Some(high);
+                self.prev_low = Some(low);
+                return;
+            }
+        };
 
+        let up_move = high - prev_high;
+        let down_move = prev_low - low;
+
+        let dm_pos = if up_move > down_move && up_move > 0.0 {
+            up_move
+        } else {
+            0.0
+        };
+        let dm_neg = if down_move > up_move && down_move > 0.0 {
+            down_move
+        } else {
+            0.0
+        };
+
+        let (smoothed_dm_pos, smoothed_dm_neg) =
             if let (Some(prev_dm_pos), Some(prev_dm_neg)) = (self.prev_dm_pos, self.prev_dm_neg) {
-                let smoothed_dm_pos = (prev_dm_pos * (length - 1.0) + dm_pos) / length;
-                let smoothed_dm_neg = (prev_dm_neg * (length - 1.0) + dm_neg) / length;
-                self.prev_dm_pos = Some(smoothed_dm_pos);
-                self.prev_dm_neg = Some(smoothed_dm_neg);
-                self.calc_dx(smoothed_dm_pos, smoothed_dm_neg, self.prev_tr.unwrap());
+                (
+                    (prev_dm_pos * (di_len - 1.0) + dm_pos) / di_len,
+                    (prev_dm_neg * (di_len - 1.0) + dm_neg) / di_len,
+                )
             } else {
                 self.prev_dm_pos = Some(dm_pos);
                 self.prev_dm_neg = Some(dm_neg);
+                self.prev_high = Some(high);
+                self.prev_low = Some(low);
                 return;
-            }
-        }
+            };
+
+        self.prev_dm_pos = Some(smoothed_dm_pos);
+        self.prev_dm_neg = Some(smoothed_dm_neg);
+
+        self.calc_dx(smoothed_dm_pos, smoothed_dm_neg, smoothed_tr);
 
         self.prev_high = Some(high);
         self.prev_low = Some(low);
@@ -176,26 +203,41 @@ impl AdxBuffer {
 
     fn update_before_close(&mut self, high: f64, low: f64, tr: f64) {
         self.dx = None;
-        let length = self.di_length as f64;
+        let di_len = self.di_length as f64;
 
-        let provisional_tr = if let Some(smoothed_tr) = self.prev_tr {
-            (smoothed_tr * (length - 1.0) + tr) / length
-        } else {
-            return;
+        let smoothed_tr = match self.prev_tr {
+            Some(prev_tr) => (prev_tr * (di_len - 1.0) + tr) / di_len,
+            None => return,
         };
 
-        if let (Some(prev_high), Some(prev_low)) = (self.prev_high, self.prev_low) {
-            let up_move = high - prev_high;
-            let down_move = prev_low - low;
-            let dm_pos = if up_move > down_move && up_move > 0.0 { up_move } else { 0.0 };
-            let dm_neg = if down_move > up_move && down_move > 0.0 { down_move } else { 0.0 };
+        let (prev_high, prev_low) = match (self.prev_high, self.prev_low) {
+            (Some(h), Some(l)) => (h, l),
+            _ => return,
+        };
 
-            if let (Some(prev_dm_pos), Some(prev_dm_neg)) = (self.prev_dm_pos, self.prev_dm_neg) {
-                let provisional_dm_pos = (prev_dm_pos * (length - 1.0) + dm_pos) / length;
-                let provisional_dm_neg = (prev_dm_neg * (length - 1.0) + dm_neg) / length;
-                self.calc_dx(provisional_dm_pos, provisional_dm_neg, provisional_tr);
-            }
-        }
+        let up_move = high - prev_high;
+        let down_move = prev_low - low;
+
+        let dm_pos = if up_move > down_move && up_move > 0.0 {
+            up_move
+        } else {
+            0.0
+        };
+        let dm_neg = if down_move > up_move && down_move > 0.0 {
+            down_move
+        } else {
+            0.0
+        };
+
+        let (prev_dm_pos, prev_dm_neg) = match (self.prev_dm_pos, self.prev_dm_neg) {
+            (Some(p), Some(n)) => (p, n),
+            _ => return,
+        };
+
+        let smoothed_dm_pos = (prev_dm_pos * (di_len - 1.0) + dm_pos) / di_len;
+        let smoothed_dm_neg = (prev_dm_neg * (di_len - 1.0) + dm_neg) / di_len;
+
+        self.calc_dx(smoothed_dm_pos, smoothed_dm_neg, smoothed_tr);
     }
 
     fn calc_dx(&mut self, dm_pos: f64, dm_neg: f64, tr: f64) {
@@ -209,11 +251,7 @@ impl AdxBuffer {
         let diff = (di_pos - di_neg).abs();
         let sum = di_pos + di_neg;
 
-        let dx = if sum > 0.0 {
-            100.0 * (diff / sum)
-        } else {
-            0.0
-        };
+        let dx = if sum > 0.0 { 100.0 * (diff / sum) } else { 0.0 };
 
         self.dx = Some(dx);
     }
@@ -229,15 +267,21 @@ impl AdxBuffer {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::indicators::{Indicator, Price, Value};
 
     fn p(h: f64, l: f64, c: f64) -> Price {
-        Price { high: h, low: l, close: c, open: l }
+        Price {
+            high: h,
+            low: l,
+            close: c,
+            open: l,
+            open_time: 0,
+            close_time: 0,
+            vlm: 0.0,
+        }
     }
 
     #[test]
@@ -307,8 +351,6 @@ mod tests {
         adx.update_after_close(p(13.0, 8.0, 12.0));
         adx.update_after_close(p(15.0, 11.0, 13.0));
 
-
-
         let after_close_val = match adx.get_last() {
             Some(Value::AdxValue(v)) => v,
             _ => panic!("missing adx"),
@@ -336,7 +378,6 @@ mod tests {
         adx.update_after_close(p(13.0, 8.0, 12.0));
         adx.update_after_close(p(15.0, 11.0, 13.0));
 
-
         assert!(adx.is_ready());
 
         adx.reset();
@@ -349,4 +390,3 @@ mod tests {
         assert_eq!(adx.buff.dx, None);
     }
 }
-

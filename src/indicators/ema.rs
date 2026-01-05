@@ -1,8 +1,8 @@
-use crate::indicators::{Price,Value, Indicator};
 use crate::Mean;
+use crate::indicators::{Indicator, Price, Value};
 
 #[derive(Clone, Debug)]
-pub struct Ema{
+pub struct Ema {
     periods: u32,
     alpha: f64,
     buff: Mean,
@@ -12,19 +12,15 @@ pub struct Ema{
 }
 
 #[derive(Clone, Debug)]
-pub struct EmaCross{
+pub struct EmaCross {
     pub short: Ema,
     pub long: Ema,
     prev_uptrend: Option<bool>,
 }
 
-
-
-impl EmaCross{
-
-    pub fn new(period_short: u32, period_long: u32) -> Self{
-        
-        EmaCross{
+impl EmaCross {
+    pub fn new(period_short: u32, period_long: u32) -> Self {
+        EmaCross {
             short: Ema::new(period_short.min(period_long)),
             long: Ema::new(period_short.max(period_long)),
             prev_uptrend: None,
@@ -32,210 +28,190 @@ impl EmaCross{
     }
 
     pub fn check_for_cross(&mut self) -> Option<bool> {
-        if !self.is_ready(){
+        if !self.is_ready() {
             None
-        }else{
+        } else {
             let uptrend = self.get_trend().unwrap();
 
             if let Some(prev_uptrend) = self.prev_uptrend {
-                
-                if uptrend != prev_uptrend{
+                if uptrend != prev_uptrend {
                     self.prev_uptrend = Some(uptrend);
                     Some(uptrend)
-                }else{
+                } else {
                     None
                 }
-            }else{
+            } else {
                 self.prev_uptrend = Some(uptrend);
                 None
             }
         }
     }
 
-    pub fn update(&mut self,price: Price ,after_close: bool){
-
-        if after_close{
+    pub fn update(&mut self, price: Price, after_close: bool) {
+        if after_close {
             self.update_after_close(price);
-        }else{
+        } else {
             self.update_before_close(price);
         }
 
-        if self.is_ready() && self.prev_uptrend.is_none(){
+        if self.is_ready() && self.prev_uptrend.is_none() {
             self.prev_uptrend = self.get_trend();
         }
     }
 
-    pub fn update_and_check_for_cross(&mut self,price: Price ,after_close: bool) -> Option<bool>{
-
+    pub fn update_and_check_for_cross(&mut self, price: Price, after_close: bool) -> Option<bool> {
         self.update(price, after_close);
         self.check_for_cross()
-
     }
 
-    pub fn get_trend(&self) -> Option<bool>{
-        if self.is_ready(){
+    pub fn get_trend(&self) -> Option<bool> {
+        if self.is_ready() {
             Some(self.short.get_last() >= self.long.get_last())
-        }else{
+        } else {
             None
         }
     }
- }
+}
 
-impl Indicator for EmaCross{
-    fn update_after_close(&mut self, price: Price){
-
+impl Indicator for EmaCross {
+    fn update_after_close(&mut self, price: Price) {
         self.short.update_after_close(price);
         self.long.update_after_close(price);
-
     }
 
-    fn update_before_close(&mut self, price: Price){
-
+    fn update_before_close(&mut self, price: Price) {
         self.short.update_before_close(price);
         self.long.update_before_close(price);
     }
 
-    fn is_ready(&self) -> bool{
-
+    fn is_ready(&self) -> bool {
         self.short.is_ready() && self.long.is_ready()
     }
 
-
-    fn period(&self) -> u32{
+    fn period(&self) -> u32 {
         //return long only
         self.long.period()
     }
 
-   
-    fn load(&mut self, price_data: &[Price]){
-        for p in price_data{
+    fn load(&mut self, price_data: &[Price]) {
+        for p in price_data {
             self.update_after_close(*p);
         }
     }
- 
-    fn reset(&mut self){
+
+    fn reset(&mut self) {
         self.short.reset();
         self.long.reset();
         self.prev_uptrend = None;
     }
-    fn get_last(&self) -> Option<Value>{
-        if let (Some(sh), Some(lg)) = (self.short.value, self.long.value){
-            return Some(Value::EmaCrossValue{short: sh, long: lg, trend:self.get_trend().unwrap()});  
+    fn get_last(&self) -> Option<Value> {
+        if let (Some(sh), Some(lg)) = (self.short.value, self.long.value) {
+            return Some(Value::EmaCrossValue {
+                short: sh,
+                long: lg,
+                trend: self.get_trend().unwrap(),
+            });
         }
 
         None
+    }
 }
 
-}
-
-
-impl Default for EmaCross{
-    fn default() -> Self{
-
+impl Default for EmaCross {
+    fn default() -> Self {
         EmaCross::new(9, 21)
     }
 }
 
+impl Ema {
+    pub fn new(periods: u32) -> Self {
+        assert!(
+            periods > 1,
+            "Ema  periods field must a positive integer n > 1, {} ",
+            periods
+        );
 
-
-
-impl Ema{
-
-    pub fn new(periods: u32) -> Self{
-
-        assert!(periods > 1, "Ema  periods field must a positive integer n > 1, {} ", periods);
-
-        Ema{
+        Ema {
             periods,
             buff: Mean::new(periods),
-            alpha: 2.0/(periods as f64 + 1.0),
+            alpha: 2.0 / (periods as f64 + 1.0),
             prev_value: None,
             value: None,
             slope: None,
         }
     }
 
-
-    pub fn get_slope(&self) -> Option<f64>{
+    pub fn get_slope(&self) -> Option<f64> {
         self.slope
     }
 }
 
-
-impl Indicator for Ema{
-
-    fn update_after_close(&mut self, price: Price){
+impl Indicator for Ema {
+    fn update_after_close(&mut self, price: Price) {
         let close = price.close;
         self.buff.update_after_close(price.close);
-        
-        if let Some(last_ema)  = self.value{
-            let ema = (self.alpha*close) + (1.0 - self.alpha)*last_ema;
-            self.slope = Some(((ema - last_ema) / last_ema)*100.0);
+
+        if let Some(last_ema) = self.value {
+            let ema = (self.alpha * close) + (1.0 - self.alpha) * last_ema;
+            self.slope = Some(((ema - last_ema) / last_ema) * 100.0);
             self.prev_value = Some(last_ema);
             self.value = Some(ema);
-        }else{
-            if self.buff.is_ready(){
-                self.value = self.buff.get_last();
-        }
-
-        
+        } else if self.buff.is_ready() {
+            let seed = self.buff.get_last();
+            self.prev_value = seed;
+            self.value = seed;
         }
     }
 
-    fn update_before_close(&mut self, price: Price){
-
-        
-        if let Some(last_ema) = self.prev_value{
+    fn update_before_close(&mut self, price: Price) {
+        if let Some(last_ema) = self.prev_value {
             let close = price.close;
-            let ema = (self.alpha*close) + (1.0 - self.alpha)*last_ema;
-            self.slope = Some(((ema - last_ema)/ last_ema)*100.0);
+            let ema = (self.alpha * close) + (1.0 - self.alpha) * last_ema;
+            self.slope = Some(((ema - last_ema) / last_ema) * 100.0);
             self.value = Some(ema);
         }
 
-        if self.buff.is_ready(){
+        if self.buff.is_ready() {
             self.buff.update_before_close(price.close);
         }
-        
     }
 
-    fn get_last(&self) -> Option<Value>{
-        if let Some(val) = self.value{
+    fn get_last(&self) -> Option<Value> {
+        if let Some(val) = self.value {
             return Some(Value::EmaValue(val));
         }
 
         None
     }
 
-    fn is_ready(&self) -> bool{
-
+    fn is_ready(&self) -> bool {
         self.value.is_some()
     }
 
-    fn load(&mut self, price_data: &[Price]){
-        for p in price_data{
+    fn load(&mut self, price_data: &[Price]) {
+        for p in price_data {
             self.update_after_close(*p);
         }
     }
 
-    fn reset(&mut self){
+    fn reset(&mut self) {
         self.buff.reset();
         self.prev_value = None;
         self.value = None;
         self.slope = None;
     }
 
-    fn period(&self) -> u32{
+    fn period(&self) -> u32 {
         self.periods
     }
 }
 
-impl Default for Ema{
-    fn default() -> Self{
-
-        Ema{
+impl Default for Ema {
+    fn default() -> Self {
+        Ema {
             periods: 9,
             buff: Mean::new(9),
-            alpha: 2.0/(9.0 + 1.0),
+            alpha: 2.0 / (9.0 + 1.0),
             prev_value: None,
             value: None,
             slope: None,
