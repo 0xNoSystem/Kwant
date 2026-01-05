@@ -1,11 +1,11 @@
+use crate::StdDev;
 use crate::indicators::{Indicator, Price, Value};
-use std::collections::VecDeque;
 
 #[derive(Clone, Debug)]
 pub struct HistVolatility {
     periods: u32,
     prev_close: Option<f64>,
-    returns: VecDeque<f64>,
+    stddev: StdDev,
     value: Option<f64>,
 }
 
@@ -17,21 +17,16 @@ impl HistVolatility {
         Self {
             periods,
             prev_close: None,
-            returns: VecDeque::with_capacity(periods as usize),
+            stddev: StdDev::new(periods),
             value: None,
         }
     }
 
-    fn recompute(slice: &[f64]) -> Option<f64> {
-        let n = slice.len();
-        if n == 0 {
-            return None;
-        }
-
-        let mean = slice.iter().sum::<f64>() / n as f64;
-        let var = slice.iter().map(|r| (r - mean).powi(2)).sum::<f64>() / n as f64;
-
-        Some(var.sqrt() * Self::ANNUALIZATION_DAYS.sqrt() * 100.0)
+    fn update_value(&mut self) {
+        self.value = self
+            .stddev
+            .get_last_value()
+            .map(|v| v * Self::ANNUALIZATION_DAYS.sqrt() * 100.0);
     }
 }
 
@@ -39,24 +34,19 @@ impl Indicator for HistVolatility {
     fn update_after_close(&mut self, price: Price) {
         if let Some(prev) = self.prev_close {
             let r = (price.close / prev).ln();
-            if self.returns.len() == self.periods as usize {
-                self.returns.pop_front();
-            }
-            self.returns.push_back(r);
-            self.value = Self::recompute(self.returns.make_contiguous());
+            self.stddev.update_after_close_value(r);
+            self.update_value();
         }
         self.prev_close = Some(price.close);
     }
 
     fn update_before_close(&mut self, price: Price) {
-        if let (Some(prev), true) = (self.prev_close, self.returns.len() == self.periods as usize) {
-            let provisional = (price.close / prev).ln();
-
-            let mut tmp = self.returns.clone();
-            tmp.pop_front();
-            tmp.push_back(provisional);
-
-            self.value = Self::recompute(tmp.make_contiguous());
+        if let Some(prev) = self.prev_close {
+            if self.stddev.is_ready() {
+                let provisional = (price.close / prev).ln();
+                self.stddev.update_before_close_value(provisional);
+                self.update_value();
+            }
         }
     }
 
@@ -65,12 +55,12 @@ impl Indicator for HistVolatility {
     }
 
     fn is_ready(&self) -> bool {
-        self.value.is_some()
+        self.stddev.is_ready()
     }
 
     fn reset(&mut self) {
         self.prev_close = None;
-        self.returns.clear();
+        self.stddev.reset();
         self.value = None;
     }
 
@@ -109,13 +99,19 @@ mod tests {
     }
 
     #[test]
-    fn hv_ready_after_first_return() {
+    fn hv_not_ready_until_window_full() {
         let mut hv = HistVolatility::new(3);
 
         hv.update_after_close(p(100.0));
         assert!(!hv.is_ready());
 
         hv.update_after_close(p(101.0));
+        assert!(!hv.is_ready());
+
+        hv.update_after_close(p(102.0));
+        assert!(!hv.is_ready());
+
+        hv.update_after_close(p(103.0));
         assert!(hv.is_ready());
     }
 
@@ -199,7 +195,6 @@ mod tests {
 
         assert!(!hv.is_ready());
         assert_eq!(hv.get_last(), None);
-        assert!(hv.returns.is_empty());
         assert_eq!(hv.prev_close, None);
     }
 }

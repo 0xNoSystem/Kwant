@@ -18,6 +18,21 @@ impl StdDev {
         }
     }
 
+    pub fn update_after_close_value(&mut self, x: f64) {
+        self.mean.update_after_close(x);
+        self.compute();
+    }
+
+    pub fn update_before_close_value(&mut self, x: f64) {
+        self.mean.update_before_close(x);
+        self.compute();
+    }
+
+    #[inline]
+    pub fn get_last_value(&self) -> Option<f64> {
+        self.value
+    }
+
     fn compute(&mut self) {
         if !self.mean.is_ready() {
             self.value = None;
@@ -35,13 +50,11 @@ impl StdDev {
 
 impl Indicator for StdDev {
     fn update_before_close(&mut self, price: Price) {
-        self.mean.update_before_close(price.close);
-        self.compute();
+        self.update_before_close_value(price.close);
     }
 
     fn update_after_close(&mut self, price: Price) {
-        self.mean.update_after_close(price.close);
-        self.compute();
+        self.update_after_close_value(price.close);
     }
 
     fn load(&mut self, price_data: &[Price]) {
