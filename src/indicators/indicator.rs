@@ -28,3 +28,32 @@ pub enum Value {
     StdDevValue(f64),
     HistVolatilityValue(f64),
 }
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum IndicatorKind {
+    Rsi(u32),
+    SmaOnRsi {
+        periods: u32,
+        smoothing_length: u32,
+    },
+    StochRsi {
+        periods: u32,
+        k_smoothing: Option<u32>,
+        d_smoothing: Option<u32>,
+    },
+    Adx {
+        periods: u32,
+        di_length: u32,
+    },
+    Atr(u32),
+    Ema(u32),
+    EmaCross {
+        short: u32,
+        long: u32,
+    },
+    Sma(u32),
+    VolMa(u32),
+    HistVolatility(u32),
+}

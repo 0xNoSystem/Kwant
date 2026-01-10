@@ -14,7 +14,7 @@ pub use atr::Atr;
 pub use ema::Ema;
 pub use ema::EmaCross;
 pub use hist_vol::HistVolatility;
-pub use indicator::{Indicator, Value};
+pub use indicator::{Indicator, Value, IndicatorKind};
 pub use rsi::{Rsi, SmaRsi};
 pub use sma::Sma;
 pub use stoch_rsi::StochasticRsi;
