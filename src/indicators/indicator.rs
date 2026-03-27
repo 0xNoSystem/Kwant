@@ -29,7 +29,6 @@ pub enum Value {
     HistVolatilityValue(f64),
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum IndicatorKind {
@@ -56,4 +55,33 @@ pub enum IndicatorKind {
     Sma(u32),
     VolMa(u32),
     HistVolatility(u32),
+}
+
+impl IndicatorKind {
+    pub fn key(&self) -> String {
+        match self {
+            IndicatorKind::Rsi(p) => format!("rsi_{}", p),
+            IndicatorKind::Atr(p) => format!("atr_{}", p),
+            IndicatorKind::Ema(p) => format!("ema_{}", p),
+            IndicatorKind::Sma(p) => format!("sma_{}", p),
+            IndicatorKind::VolMa(p) => format!("volMa_{}", p),
+            IndicatorKind::HistVolatility(p) => format!("histVol_{}", p),
+            IndicatorKind::SmaOnRsi {
+                periods,
+                smoothing_length,
+            } => format!("smaRsi_{}_{}", periods, smoothing_length),
+            IndicatorKind::StochRsi {
+                periods,
+                k_smoothing,
+                d_smoothing,
+            } => format!(
+                "stochRsi_{}_{}_{}",
+                periods,
+                k_smoothing.unwrap_or(0),
+                d_smoothing.unwrap_or(0)
+            ),
+            IndicatorKind::Adx { periods, di_length } => format!("adx_{}_{}", periods, di_length),
+            IndicatorKind::EmaCross { short, long } => format!("emaCross_{}_{}", short, long),
+        }
+    }
 }
