@@ -37,6 +37,11 @@ impl Mean {
         self.buff.len()
     }
 
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.buff.is_empty()
+    }
+
     pub fn update_after_close(&mut self, x: f64) {
         if self.is_ready() {
             let expired = if self.in_candle {

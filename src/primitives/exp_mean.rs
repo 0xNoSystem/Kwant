@@ -5,7 +5,7 @@ pub struct ExpMean {
     periods: u32,
     alpha: f64,
     buff: Mean,
-    prev_value: Option<f64>,
+    confirmed_value: Option<f64>,
     value: Option<f64>,
 }
 
@@ -16,7 +16,7 @@ impl ExpMean {
             periods,
             alpha: 2.0 / (periods as f64 + 1.0),
             buff: Mean::new(periods),
-            prev_value: None,
+            confirmed_value: None,
             value: None,
         }
     }
@@ -24,18 +24,20 @@ impl ExpMean {
     pub fn update_after_close(&mut self, x: f64) {
         self.buff.update_after_close(x);
 
-        if let Some(last_ema) = self.value {
-            let ema = (self.alpha * x) + (1.0 - self.alpha) * last_ema;
-            self.prev_value = Some(last_ema);
+        if let Some(last_confirmed) = self.confirmed_value {
+            let ema = (self.alpha * x) + (1.0 - self.alpha) * last_confirmed;
+            self.confirmed_value = Some(ema);
             self.value = Some(ema);
         } else if self.buff.is_ready() {
-            self.value = self.buff.get_last();
+            let seed = self.buff.get_last();
+            self.confirmed_value = seed;
+            self.value = seed;
         }
     }
 
     pub fn update_before_close(&mut self, x: f64) {
-        if let Some(last_ema) = self.prev_value {
-            let ema = (self.alpha * x) + (1.0 - self.alpha) * last_ema;
+        if let Some(last_confirmed) = self.confirmed_value {
+            let ema = (self.alpha * x) + (1.0 - self.alpha) * last_confirmed;
             self.value = Some(ema);
         }
 
@@ -60,9 +62,14 @@ impl ExpMean {
         self.value
     }
 
+    #[inline]
+    pub fn get_confirmed(&self) -> Option<f64> {
+        self.confirmed_value
+    }
+
     pub fn reset(&mut self) {
         self.buff.reset();
-        self.prev_value = None;
+        self.confirmed_value = None;
         self.value = None;
     }
 

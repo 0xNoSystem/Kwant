@@ -1,5 +1,5 @@
+use super::stoch_rsi::StochBuffer;
 use crate::indicators::Price;
-use crate::indicators::stoch_rsi::StochBuffer;
 use crate::indicators::{Indicator, Value};
 use std::collections::VecDeque;
 
@@ -87,11 +87,11 @@ impl Rsi {
         let sma = smoothing_length.map(SmaOnRsi::new);
 
         Rsi {
-            periods: periods,
+            periods,
             buff: RsiBuffer::new(periods - 1),
             last_price: None,
             value: None,
-            sma: sma,
+            sma,
             stoch: StochBuffer::new(
                 stoch_length,
                 k_smoothing.unwrap_or(3),
@@ -179,16 +179,11 @@ impl Indicator for Rsi {
 
         self.buff.push_before_close(change);
 
-        if self.buff.is_full() {
-            match (self.buff.last_avg_gain, self.buff.last_avg_loss) {
-                (Some(last_avg_gain), Some(last_avg_loss)) => {
-                    self.calc_rsi(change, last_avg_gain, last_avg_loss, false);
-                }
-
-                _ => {
-                    return;
-                }
-            }
+        if self.buff.is_full()
+            && let (Some(last_avg_gain), Some(last_avg_loss)) =
+                (self.buff.last_avg_gain, self.buff.last_avg_loss)
+        {
+            self.calc_rsi(change, last_avg_gain, last_avg_loss, false);
         }
     }
 
@@ -205,16 +200,11 @@ impl Indicator for Rsi {
         self.buff.push(change);
         self.last_price = Some(price);
 
-        if self.buff.is_full() {
-            match (self.buff.last_avg_gain, self.buff.last_avg_loss) {
-                (Some(last_avg_gain), Some(last_avg_loss)) => {
-                    self.calc_rsi(change, last_avg_gain, last_avg_loss, true);
-                }
-
-                _ => {
-                    return;
-                }
-            }
+        if self.buff.is_full()
+            && let (Some(last_avg_gain), Some(last_avg_loss)) =
+                (self.buff.last_avg_gain, self.buff.last_avg_loss)
+        {
+            self.calc_rsi(change, last_avg_gain, last_avg_loss, true);
         }
     }
     fn get_last(&self) -> Option<Value> {
@@ -239,7 +229,7 @@ impl Indicator for Rsi {
         self.last_price = None;
         self.value = None;
         if let Some(sma) = &mut self.sma {
-            *sma = SmaOnRsi::new(sma.length as u32);
+            *sma = SmaOnRsi::new(sma.length);
         }
         self.stoch.reset();
     }

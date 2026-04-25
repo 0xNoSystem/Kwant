@@ -1,12 +1,9 @@
-use crate::Mean;
+use crate::ExpMean;
 use crate::indicators::{Indicator, Price, Value};
 
 #[derive(Clone, Debug)]
 pub struct Ema {
-    periods: u32,
-    alpha: f64,
-    buff: Mean,
-    prev_value: Option<f64>,
+    core: ExpMean,
     pub value: Option<f64>,
     slope: Option<f64>,
 }
@@ -89,7 +86,6 @@ impl Indicator for EmaCross {
     }
 
     fn period(&self) -> u32 {
-        //return long only
         self.long.period()
     }
 
@@ -104,6 +100,7 @@ impl Indicator for EmaCross {
         self.long.reset();
         self.prev_uptrend = None;
     }
+
     fn get_last(&self) -> Option<Value> {
         if let (Some(sh), Some(lg)) = (self.short.value, self.long.value) {
             return Some(Value::EmaCrossValue {
@@ -127,15 +124,12 @@ impl Ema {
     pub fn new(periods: u32) -> Self {
         assert!(
             periods > 1,
-            "Ema  periods field must a positive integer n > 1, {} ",
+            "Ema periods field must a positive integer n > 1, {} ",
             periods
         );
 
-        Ema {
-            periods,
-            buff: Mean::new(periods),
-            alpha: 2.0 / (periods as f64 + 1.0),
-            prev_value: None,
+        Self {
+            core: ExpMean::new(periods),
             value: None,
             slope: None,
         }
@@ -144,44 +138,36 @@ impl Ema {
     pub fn get_slope(&self) -> Option<f64> {
         self.slope
     }
+
+    fn sync_value(&mut self) {
+        self.value = self.core.get_last();
+    }
+
+    fn update_slope(&mut self, last_confirmed: Option<f64>) {
+        self.slope = match (last_confirmed, self.value) {
+            (Some(previous), Some(current)) => Some(((current - previous) / previous) * 100.0),
+            _ => None,
+        };
+    }
 }
 
 impl Indicator for Ema {
     fn update_after_close(&mut self, price: Price) {
-        let close = price.close;
-        self.buff.update_after_close(price.close);
-
-        if let Some(last_ema) = self.value {
-            let ema = (self.alpha * close) + (1.0 - self.alpha) * last_ema;
-            self.slope = Some(((ema - last_ema) / last_ema) * 100.0);
-            self.prev_value = Some(last_ema);
-            self.value = Some(ema);
-        } else if self.buff.is_ready() {
-            let seed = self.buff.get_last();
-            self.prev_value = seed;
-            self.value = seed;
-        }
+        let last_confirmed = self.core.get_confirmed();
+        self.core.update_after_close(price.close);
+        self.sync_value();
+        self.update_slope(last_confirmed);
     }
 
     fn update_before_close(&mut self, price: Price) {
-        if let Some(last_ema) = self.prev_value {
-            let close = price.close;
-            let ema = (self.alpha * close) + (1.0 - self.alpha) * last_ema;
-            self.slope = Some(((ema - last_ema) / last_ema) * 100.0);
-            self.value = Some(ema);
-        }
-
-        if self.buff.is_ready() {
-            self.buff.update_before_close(price.close);
-        }
+        let last_confirmed = self.core.get_confirmed();
+        self.core.update_before_close(price.close);
+        self.sync_value();
+        self.update_slope(last_confirmed);
     }
 
     fn get_last(&self) -> Option<Value> {
-        if let Some(val) = self.value {
-            return Some(Value::EmaValue(val));
-        }
-
-        None
+        self.value.map(Value::EmaValue)
     }
 
     fn is_ready(&self) -> bool {
@@ -195,26 +181,74 @@ impl Indicator for Ema {
     }
 
     fn reset(&mut self) {
-        self.buff.reset();
-        self.prev_value = None;
+        self.core.reset();
         self.value = None;
         self.slope = None;
     }
 
     fn period(&self) -> u32 {
-        self.periods
+        self.core.period()
     }
 }
 
 impl Default for Ema {
     fn default() -> Self {
-        Ema {
-            periods: 9,
-            buff: Mean::new(9),
-            alpha: 2.0 / (9.0 + 1.0),
-            prev_value: None,
+        Self {
+            core: ExpMean::new(9),
             value: None,
             slope: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn p(close: f64) -> Price {
+        Price {
+            open: close,
+            high: close,
+            low: close,
+            close,
+            open_time: 0,
+            close_time: 0,
+            vlm: 0.0,
+        }
+    }
+
+    fn approx_eq(a: f64, b: f64) {
+        assert!((a - b).abs() < 1e-9, "left={a}, right={b}");
+    }
+
+    #[test]
+    fn ema_seeds_from_sma_then_updates() {
+        let mut ema = Ema::new(3);
+
+        ema.update_after_close(p(10.0));
+        ema.update_after_close(p(11.0));
+        assert!(!ema.is_ready());
+
+        ema.update_after_close(p(12.0));
+        approx_eq(ema.value.unwrap(), 11.0);
+
+        ema.update_after_close(p(13.0));
+        approx_eq(ema.value.unwrap(), 12.0);
+        approx_eq(ema.get_slope().unwrap(), (1.0 / 11.0) * 100.0);
+    }
+
+    #[test]
+    fn ema_after_close_uses_last_confirmed_not_provisional() {
+        let mut ema = Ema::new(3);
+
+        ema.load(&[p(10.0), p(11.0), p(12.0)]);
+        approx_eq(ema.value.unwrap(), 11.0);
+
+        ema.update_before_close(p(13.0));
+        approx_eq(ema.value.unwrap(), 12.0);
+
+        ema.update_after_close(p(14.0));
+        approx_eq(ema.value.unwrap(), 12.5);
+        approx_eq(ema.get_slope().unwrap(), ((12.5 - 11.0) / 11.0) * 100.0);
     }
 }

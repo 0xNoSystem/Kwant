@@ -17,11 +17,42 @@ pub trait Indicator: Debug + Sync + Send {
 #[serde(rename_all = "camelCase")]
 pub enum Value {
     RsiValue(f64),
-    StochRsiValue { k: f64, d: f64 },
+    StochRsiValue {
+        k: f64,
+        d: f64,
+    },
     EmaValue(f64),
-    EmaCrossValue { short: f64, long: f64, trend: bool },
+    DemaValue(f64),
+    TemaValue(f64),
+    ObvValue(f64),
+    VwapDeviationValue(f64),
+    CciValue(f64),
+    IchimokuValue {
+        tenkan: f64,
+        kijun: f64,
+        span_a: f64,
+        span_b: f64,
+        chikou: f64,
+    },
+    EmaCrossValue {
+        short: f64,
+        long: f64,
+        trend: bool,
+    },
+    MacdValue {
+        macd: f64,
+        signal: f64,
+        histogram: f64,
+    },
     SmaValue(f64),
     SmaRsiValue(f64),
+    RocValue(f64),
+    BollingerValue {
+        upper: f64,
+        mid: f64,
+        lower: f64,
+        width: f64,
+    },
     AdxValue(f64),
     AtrValue(f64),
     VolumeMaValue(f64),
@@ -48,11 +79,31 @@ pub enum IndicatorKind {
     },
     Atr(u32),
     Ema(u32),
+    Dema(u32),
+    Tema(u32),
+    Obv,
+    VwapDeviation(u32),
+    Cci(u32),
+    Ichimoku {
+        tenkan: u32,
+        kijun: u32,
+        senkou_b: u32,
+    },
     EmaCross {
         short: u32,
         long: u32,
     },
+    Macd {
+        fast: u32,
+        slow: u32,
+        signal: u32,
+    },
     Sma(u32),
+    Roc(u32),
+    BollingerBands {
+        periods: u32,
+        std_multiplier_x100: u32,
+    },
     VolMa(u32),
     HistVolatility(u32),
 }
@@ -63,7 +114,13 @@ impl IndicatorKind {
             IndicatorKind::Rsi(p) => format!("rsi_{}", p),
             IndicatorKind::Atr(p) => format!("atr_{}", p),
             IndicatorKind::Ema(p) => format!("ema_{}", p),
+            IndicatorKind::Dema(p) => format!("dema_{}", p),
+            IndicatorKind::Tema(p) => format!("tema_{}", p),
+            IndicatorKind::Obv => "obv".to_string(),
+            IndicatorKind::VwapDeviation(p) => format!("vwapDeviation_{}", p),
+            IndicatorKind::Cci(p) => format!("cci_{}", p),
             IndicatorKind::Sma(p) => format!("sma_{}", p),
+            IndicatorKind::Roc(p) => format!("roc_{}", p),
             IndicatorKind::VolMa(p) => format!("volMa_{}", p),
             IndicatorKind::HistVolatility(p) => format!("histVol_{}", p),
             IndicatorKind::SmaOnRsi {
@@ -82,6 +139,35 @@ impl IndicatorKind {
             ),
             IndicatorKind::Adx { periods, di_length } => format!("adx_{}_{}", periods, di_length),
             IndicatorKind::EmaCross { short, long } => format!("emaCross_{}_{}", short, long),
+            IndicatorKind::Macd { fast, slow, signal } => {
+                format!("macd_{}_{}_{}", fast, slow, signal)
+            }
+            IndicatorKind::Ichimoku {
+                tenkan,
+                kijun,
+                senkou_b,
+            } => format!("ichimoku_{}_{}_{}", tenkan, kijun, senkou_b),
+            IndicatorKind::BollingerBands {
+                periods,
+                std_multiplier_x100,
+            } => format!(
+                "bollinger_{}_{}",
+                periods,
+                format_multiplier_x100(*std_multiplier_x100)
+            ),
         }
+    }
+}
+
+fn format_multiplier_x100(std_multiplier_x100: u32) -> String {
+    let whole = std_multiplier_x100 / 100;
+    let fraction = std_multiplier_x100 % 100;
+
+    if fraction == 0 {
+        whole.to_string()
+    } else if fraction.is_multiple_of(10) {
+        format!("{}.{}", whole, fraction / 10)
+    } else {
+        format!("{}.{:02}", whole, fraction)
     }
 }

@@ -41,12 +41,12 @@ impl Indicator for HistVolatility {
     }
 
     fn update_before_close(&mut self, price: Price) {
-        if let Some(prev) = self.prev_close {
-            if self.stddev.is_ready() {
-                let provisional = (price.close / prev).ln();
-                self.stddev.update_before_close_value(provisional);
-                self.update_value();
-            }
+        if let Some(prev) = self.prev_close
+            && self.stddev.is_ready()
+        {
+            let provisional = (price.close / prev).ln();
+            self.stddev.update_before_close_value(provisional);
+            self.update_value();
         }
     }
 

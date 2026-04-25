@@ -77,7 +77,7 @@ impl Indicator for Atr {
     }
 
     fn get_last(&self) -> Option<Value> {
-        self.value.map(|value| Value::AtrValue(value))
+        self.value.map(Value::AtrValue)
     }
     fn load(&mut self, price_data: &[Price]) {
         for p in price_data {
