@@ -134,8 +134,8 @@ impl IndicatorKind {
             } => format!(
                 "stochRsi_{}_{}_{}",
                 periods,
-                k_smoothing.unwrap_or(0),
-                d_smoothing.unwrap_or(0)
+                k_smoothing.unwrap_or(3),
+                d_smoothing.unwrap_or(3)
             ),
             IndicatorKind::Adx { periods, di_length } => format!("adx_{}_{}", periods, di_length),
             IndicatorKind::EmaCross { short, long } => format!("emaCross_{}_{}", short, long),
