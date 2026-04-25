@@ -115,7 +115,7 @@ impl Indicator for Macd {
     }
 
     fn period(&self) -> u32 {
-        self.slow_period
+        self.slow_period + self.signal_ema.period() - 1
     }
 }
 
@@ -220,5 +220,15 @@ mod tests {
         assert_eq!(macd.macd, None);
         assert_eq!(macd.signal, None);
         assert_eq!(macd.histogram, None);
+    }
+
+    #[test]
+    fn macd_period_matches_readiness_requirement() {
+        let mut macd = Macd::new(12, 26, 9);
+        let candles: Vec<_> = (0..macd.period()).map(|i| p(100.0 + i as f64)).collect();
+
+        macd.load(&candles);
+
+        assert!(macd.is_ready());
     }
 }
