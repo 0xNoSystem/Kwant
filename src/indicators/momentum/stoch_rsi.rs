@@ -125,49 +125,48 @@ impl StochBuffer {
         self.buffer.push_back(rsi);
     }
 
+    fn rebuild_extrema(&mut self) {
+        self.min_buffer.clear();
+        self.max_buffer.clear();
+
+        for &value in &self.buffer {
+            while let Some(&last) = self.min_buffer.back() {
+                if last > value {
+                    self.min_buffer.pop_back();
+                } else {
+                    break;
+                }
+            }
+            self.min_buffer.push_back(value);
+
+            while let Some(&last) = self.max_buffer.back() {
+                if last < value {
+                    self.max_buffer.pop_back();
+                } else {
+                    break;
+                }
+            }
+            self.max_buffer.push_back(value);
+        }
+    }
+
     fn remove_front_value(&mut self) -> f64 {
         let expired = self.buffer.pop_front().unwrap();
-
-        if self
-            .min_buffer
-            .front()
-            .is_some_and(|&value| is_same(value, expired))
-        {
-            self.min_buffer.pop_front();
-        }
-        if self
-            .max_buffer
-            .front()
-            .is_some_and(|&value| is_same(value, expired))
-        {
-            self.max_buffer.pop_front();
-        }
+        self.rebuild_extrema();
 
         expired
     }
 
     fn remove_back_value(&mut self) -> f64 {
         let expired = self.buffer.pop_back().unwrap();
-
-        if self
-            .min_buffer
-            .back()
-            .is_some_and(|&value| is_same(value, expired))
-        {
-            self.min_buffer.pop_back();
-        }
-        if self
-            .max_buffer
-            .back()
-            .is_some_and(|&value| is_same(value, expired))
-        {
-            self.max_buffer.pop_back();
-        }
+        self.rebuild_extrema();
 
         expired
     }
 
     pub fn update_after_close(&mut self, rsi: f64) {
+        let had_provisional = !self.in_candle;
+
         if self.buffer.len() == self.length as usize {
             if self.in_candle {
                 self.remove_front_value();
@@ -178,15 +177,16 @@ impl StochBuffer {
 
         self.push_value(rsi);
 
-        self.compute_stoch_rsi(rsi, true);
+        self.compute_stoch_rsi(rsi, true, had_provisional);
         self.in_candle = true;
     }
 
     pub fn update_before_close(&mut self, rsi: f64) {
         if self.is_ready() {
+            let had_provisional = !self.in_candle;
             if let Some(&old_rsi) = self.buffer.back()
                 && is_same(old_rsi, rsi)
-                && !self.in_candle
+                && had_provisional
             {
                 return;
             }
@@ -199,11 +199,11 @@ impl StochBuffer {
                 }
             }
             self.push_value(rsi);
-            self.compute_stoch_rsi(rsi, false);
+            self.compute_stoch_rsi(rsi, false, had_provisional);
         }
     }
 
-    fn compute_stoch_rsi(&mut self, latest_rsi: f64, after: bool) {
+    fn compute_stoch_rsi(&mut self, latest_rsi: f64, after: bool, had_provisional: bool) {
         if self.buffer.len() == self.length as usize
             && !self.min_buffer.is_empty()
             && !self.max_buffer.is_empty()
@@ -218,24 +218,31 @@ impl StochBuffer {
             }
 
             let raw_k = (latest_rsi - current_min) / (current_max - current_min);
-            self.push_k_smoothing(raw_k, after);
+            self.push_k_smoothing(raw_k, after, had_provisional);
         } else {
             self.k_value = None;
             self.d_value = None;
         }
     }
 
-    fn push_k_smoothing(&mut self, raw_k: f64, after: bool) {
+    fn pop_smoothed_value(buffer: &mut VecDeque<f64>, sum: &mut f64, had_provisional: bool) {
+        let expired = if had_provisional {
+            buffer.pop_back().unwrap()
+        } else {
+            buffer.pop_front().unwrap()
+        };
+        *sum -= expired;
+    }
+
+    fn push_k_smoothing(&mut self, raw_k: f64, after: bool, had_provisional: bool) {
         let k_len = self.k_smoothing_buffer.capacity();
 
         if self.k_smoothing_buffer.len() == k_len {
-            if after {
-                let expired = self.k_smoothing_buffer.pop_front().unwrap();
-                self.k_sum -= expired;
-            } else {
-                let expired = self.k_smoothing_buffer.pop_back().unwrap();
-                self.k_sum -= expired;
-            }
+            Self::pop_smoothed_value(
+                &mut self.k_smoothing_buffer,
+                &mut self.k_sum,
+                had_provisional,
+            );
         } else {
             if !after {
                 self.k_value = None;
@@ -249,24 +256,18 @@ impl StochBuffer {
         if self.k_smoothing_buffer.len() == k_len {
             let smoothed_k = self.k_sum / k_len as f64;
             self.k_value = Some(smoothed_k);
-            self.push_d_smoothing(smoothed_k, after);
+            self.push_d_smoothing(smoothed_k, after, had_provisional);
         } else {
             self.k_value = None;
             self.d_value = None;
         }
     }
 
-    fn push_d_smoothing(&mut self, k_val: f64, after: bool) {
+    fn push_d_smoothing(&mut self, k_val: f64, after: bool, had_provisional: bool) {
         let d_len = self.d_buffer.capacity();
 
         if self.d_buffer.len() == d_len {
-            if after {
-                let expired = self.d_buffer.pop_front().unwrap();
-                self.d_sum -= expired;
-            } else {
-                let expired = self.d_buffer.pop_back().unwrap();
-                self.d_sum -= expired;
-            }
+            Self::pop_smoothed_value(&mut self.d_buffer, &mut self.d_sum, had_provisional);
         } else {
             if !after {
                 self.d_value = None;
@@ -306,5 +307,34 @@ impl StochBuffer {
         self.d_sum = 0.0;
         self.d_value = None;
         self.in_candle = true;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::StochBuffer;
+
+    fn approx_eq(a: f64, b: f64) {
+        assert!((a - b).abs() < 1e-9, "left={a}, right={b}");
+    }
+
+    #[test]
+    fn provisional_updates_match_close_only_after_close() {
+        let mut close_only = StochBuffer::new(3, 2, 2);
+        let mut live = StochBuffer::new(3, 2, 2);
+
+        for rsi in [10.0, 20.0, 30.0, 40.0, 35.0] {
+            close_only.update_after_close(rsi);
+            live.update_after_close(rsi);
+        }
+
+        live.update_before_close(31.0);
+        live.update_before_close(33.0);
+        live.update_after_close(38.0);
+
+        close_only.update_after_close(38.0);
+
+        approx_eq(live.get_k().unwrap(), close_only.get_k().unwrap());
+        approx_eq(live.get_d().unwrap(), close_only.get_d().unwrap());
     }
 }
